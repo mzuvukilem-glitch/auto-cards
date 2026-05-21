@@ -1,12 +1,8 @@
 package saucedemo.login;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.junit.Options;
-import com.microsoft.playwright.junit.OptionsFactory;
-import com.microsoft.playwright.junit.UsePlaywright;
 import org.junit.jupiter.api.*;
 
-//@UsePlaywright(LaunchTest.CustomOptions)
 public class LaunchTest{
 
     static Playwright playwright;
@@ -34,7 +30,7 @@ public class LaunchTest{
     public void loginTest(){
         page.navigate("https://www.saucedemo.com/");
         String title = page.title();
-        Assertions.assertEquals(title, "Swag Labs");
+        Assertions.assertEquals("Swag Labs", title);
         page.locator("[placeholder='Username']").click();
         page.locator("[placeholder='Username']").fill("standard_user");
 
@@ -56,7 +52,7 @@ public class LaunchTest{
     public void logoutTest(){
         page.navigate("https://www.saucedemo.com/");
         String title = page.title();
-        Assertions.assertEquals(title, "Swag Labs");
+        Assertions.assertEquals("Swag Labs", title);
         page.locator("[placeholder='Username']").click();
         page.locator("[placeholder='Username']").fill("standard_user");
 
@@ -71,13 +67,7 @@ public class LaunchTest{
         page.locator("[id='react-burger-menu-btn']").click();
         page.locator("[id='logout_sidebar_link']").click();
 
-        Assertions.assertEquals(title, "Swag Labs");
+        Assertions.assertEquals("Swag Labs", title);
 
     }
-//    public static class CustomOptions implements OptionsFactory{
-//        @Override
-//        public Options getOptions() {
-//            return new Options().setHeadless(true);
-//        }
-//    }
 }
