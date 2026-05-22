@@ -1,11 +1,11 @@
 package saucedemo.base;
 
 import com.microsoft.playwright.*;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.*;
 import saucedemo.config.BrowserTypeOption;
 import saucedemo.config.ConfigReader;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BrowserSetup {
 
     protected static Playwright playwright;
@@ -48,17 +48,19 @@ public class BrowserSetup {
                 browser = playwright.chromium().launch(options);
                 break;
         }
+    }
 
-        // Create a new private context and page for the test
+    @DisplayName("By id")
+    protected void performLogin(Page page, String username, String password) {
+        page.fill("#user-name", username);
+        page.fill("#password", password);
+        page.click("#login-button");
+    }
+    @BeforeEach
+    public void setupPage() {
         browserContext = browser.newContext();
         page = browserContext.newPage();
     }
-//    @BeforeEach
-//    public void setupUp() {
-//        page.navigate("https://www.saucedemo.com/");
-//        playwright.selectors().setTestIdAttribute("data-test");
-//        PlaywrightAssertions.assertThat(page.getByTestId("login-button")).isVisible();
-//    }
     @AfterAll
     public static void teardown() {
         browser.close();
