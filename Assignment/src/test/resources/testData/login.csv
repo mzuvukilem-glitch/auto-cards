@@ -1,0 +1,4 @@
+testId,scenario,username,password,errorMessage
+001,positive,standard_user,secret_sauce,
+002,negative,locked_out_user,secret_sauce,this user has been locked out
+003,positive,locked_out_user,secret_sauce,

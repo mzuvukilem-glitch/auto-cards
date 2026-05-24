@@ -4,15 +4,15 @@ import com.microsoft.playwright.*;
 import org.junit.jupiter.api.*;
 import saucedemo.config.BrowserTypeOption;
 import saucedemo.config.ConfigReader;
+import saucedemo.utilities.ScreenShotManager;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class BrowserSetup {
+public class Setup {
 
     protected static Playwright playwright;
     protected static Browser browser;
     protected static BrowserContext browserContext;
     protected static Page page;
-    protected static final BrowserTypeOption CHOSEN_BROWSER = BrowserTypeOption.CHROMIUM;
 
     @BeforeAll
     public static void setupBrowser() {
@@ -50,16 +50,16 @@ public class BrowserSetup {
         }
     }
 
-    @DisplayName("By id")
-    protected void performLogin(Page page, String username, String password) {
-        page.fill("#user-name", username);
-        page.fill("#password", password);
-        page.click("#login-button");
-    }
     @BeforeEach
     public void setupPage() {
         browserContext = browser.newContext();
         page = browserContext.newPage();
+    }
+
+    @AfterEach
+    public void screenShot() {
+        ScreenShotManager.takeScreenShot(page, "Final Screenshot");
+
     }
     @AfterAll
     public static void teardown() {

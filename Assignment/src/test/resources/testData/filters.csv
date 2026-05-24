@@ -1,0 +1,4 @@
+testId,scenario,username,password,filter
+001,positive,standard_user,secret_sauce,Z-A
+002,positive,standard_user,secret_sauce,LO-HI
+003,positive,standard_user,secret_sauce,HI-LO
