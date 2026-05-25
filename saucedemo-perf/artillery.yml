@@ -1,0 +1,22 @@
+config:
+  target: "https://www.saucedemo.com"
+  engines:
+    playwright: {}
+  processor: "./commands/purchase.js"
+  phases:
+  - name: constantArrival
+    duration: 10
+    arrivalRate: 1
+  - name: pause
+    pause: 1
+  # ramp up
+    duration: 10
+    arrivalRate: 2
+    rampTo: 15
+
+scenarios:
+  - name: Purchase
+    engine: playwright 
+    testFunction: "testPurchase"
+    # flow:
+    #   - function: "testPurchase"
