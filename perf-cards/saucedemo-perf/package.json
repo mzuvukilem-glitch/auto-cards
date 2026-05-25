@@ -6,10 +6,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "perfScript.js",
-  "devDependencies": {},
   "scripts": {
-  "test": "playwright test"
-},
+    "test": "playwright test"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
