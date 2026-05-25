@@ -1,0 +1,11 @@
+config:
+  target: https://www.saucedemo.com
+  engines:
+    playwright: {}
+  processor: "./tests/artillery/purchase.js"
+
+scenarios:
+  - engines: playwright
+    testFunction: "artilleryScript"
+    flow:
+      - function: "artilleryScript"

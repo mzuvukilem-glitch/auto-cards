@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@playwright/test": "^1.60.0"
+  },
+  "name": "saucedemo-perf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "perfScript.js",
+  "devDependencies": {},
+  "scripts": {
+  "test": "playwright test"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
