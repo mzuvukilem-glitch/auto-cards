@@ -1,0 +1,109 @@
+# Azure DevOps pipeline for the Appium mobile automation framework.
+# The build stage is device-free; Android/iOS stages need capable agents
+# (Linux with an emulator, or a macOS agent with Xcode).
+
+trigger:
+  branches:
+    include: [ main, master ]
+
+pr:
+  branches:
+    include: [ '*' ]
+
+parameters:
+  - name: platform
+    displayName: Target platform
+    type: string
+    default: android
+    values: [ android, ios ]
+
+variables:
+  MAVEN_OPTS: '-Dfile.encoding=UTF-8'
+
+stages:
+  - stage: Build
+    displayName: Build & compile (device-free)
+    jobs:
+      - job: compile
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+          - script: mvn -B clean test-compile
+            displayName: mvn clean test-compile
+
+  - stage: AndroidTest
+    displayName: Android tests (emulator)
+    dependsOn: Build
+    condition: and(succeeded(), ne('${{ parameters.platform }}', 'ios'))
+    jobs:
+      - job: android
+        timeoutInMinutes: 60
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+          - script: |
+              npm install -g appium
+              appium driver install uiautomator2
+            displayName: Install Appium + UiAutomator2
+          - script: echo "Download app-debug.apk into src/test/resources/apps/"
+            displayName: Fetch app binary
+          - script: |
+              appium --log-level warn &
+              sleep 5
+              mvn -B test -Dplatform=android
+            displayName: Run Android tests
+          - script: mvn -B allure:report
+            displayName: Allure report
+            condition: always()
+          - task: PublishTestResults@2
+            condition: always()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: 'target/surefire-reports/TEST-*.xml'
+          - task: PublishBuildArtifacts@1
+            condition: always()
+            inputs:
+              PathtoPublish: 'target/site/allure-maven-plugin'
+              ArtifactName: allure-report
+
+  - stage: IOSTest
+    displayName: iOS tests (simulator)
+    dependsOn: Build
+    condition: and(succeeded(), eq('${{ parameters.platform }}', 'ios'))
+    jobs:
+      - job: ios
+        timeoutInMinutes: 60
+        pool:
+          vmImage: macOS-14
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+          - script: |
+              npm install -g appium
+              appium driver install xcuitest
+            displayName: Install Appium + XCUITest
+          - script: echo "Download app.ipa/.app into src/test/resources/apps/"
+            displayName: Fetch app binary
+          - script: |
+              appium --log-level warn &
+              sleep 5
+              mvn -B test -Dplatform=ios
+            displayName: Run iOS tests
+          - task: PublishTestResults@2
+            condition: always()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: 'target/surefire-reports/TEST-*.xml'

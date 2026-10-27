@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'BROWSER', choices: ['chromium', 'firefox', 'webkit'], description: 'Browser engine')
+        booleanParam(name: 'HEADLESS', defaultValue: true, description: 'Run headless')
+    }
+
+    environment {
+        MAVEN_OPTS = '-Dfile.encoding=UTF-8'
+        // Keep the Playwright browser cache inside the workspace for reuse
+        PLAYWRIGHT_BROWSERS_PATH = "${WORKSPACE}/.cache/ms-playwright"
+    }
+
+    options {
+        timestamps()
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn -B clean test-compile'
+            }
+        }
+
+        stage('Install browsers') {
+            steps {
+                sh 'mvn -B compile exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install --with-deps"'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh "mvn -B test -Dbrowser=${params.BROWSER} -Dheadless=${params.HEADLESS}"
+            }
+        }
+
+        stage('Allure report') {
+            steps {
+                sh 'mvn -B allure:report'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'videos/**, target/site/allure-maven-plugin/**', allowEmptyArchive: true
+            // Requires the Allure Jenkins plugin
+            allure includeProperties: false, results: [[path: 'target/allure-results']]
+        }
+    }
+}
