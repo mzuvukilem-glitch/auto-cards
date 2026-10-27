@@ -1,0 +1,30 @@
+# Build
+target/
+*.class
+
+# Reports & runtime output
+logs/
+test-output/
+allure-results/
+allure-report/
+screenshots/
+.allure/
+
+# App binaries (usually too large / env-specific for VCS)
+src/test/resources/apps/*.apk
+src/test/resources/apps/*.ipa
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local secrets (never commit)
+.env

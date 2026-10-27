@@ -1,0 +1,121 @@
+# Architecture
+
+How the framework is structured, what each component does, and how a test flows
+from invocation to report.
+
+## Design goals
+
+| Goal | How it's achieved |
+|------|-------------------|
+| One suite, any browser | `browser` config + `PlaywrightFactory` launches Chromium/Firefox/WebKit |
+| Safe parallel execution | `ThreadLocal` Playwright/Browser/Context/Page per test thread |
+| No hard-coded config | Externalised `config.properties` + `-D` overrides |
+| Readable failures | Allure `@Step`, auto screenshots, trace & video on failure |
+| Reusable framework core | `src/main` (framework) separated from `src/test` (tests) |
+
+## Layered view
+
+```
+Test Layer          base/ · tests/                     (src/test)
+      │  calls page objects, asserts with JUnit 5
+      ▼
+Page Object Layer   pages/ (BasePage, *Page)            (src/main)
+      │  click/fill/text via Playwright Locators
+      ▼
+Driver Layer        driver/ (Factory, Manager)          (src/main)
+      │  one Playwright+Browser+Context+Page per thread
+      ▼
+Config Layer        config/ (ConfigReader, BrowserType) (src/main)
+      │  reads properties, selects browser engine
+      ▼
+Playwright  ──►  Chromium | Firefox | WebKit  ──►  App under test
+```
+
+## Component responsibilities
+
+### `driver/`
+- **`PlaywrightFactory`** — `initPage()` creates a `Playwright` instance, launches
+  the configured browser, opens a `BrowserContext` (viewport, video) and a `Page`,
+  storing each in `PlaywrightManager`. `closePage()` closes them and clears the
+  ThreadLocals.
+- **`PlaywrightManager`** — thread-safe holder. Keeps `Playwright`, `Browser`,
+  `BrowserContext`, and `Page` in `ThreadLocal`s so parallel threads never share
+  browser state.
+
+### `config/`
+- **`ConfigReader`** — loads `config.properties` from the classpath; a matching
+  `-Dkey=value` always overrides. Typed getters (`getBoolean`, `getInt`).
+- **`BrowserType`** — `CHROMIUM` / `FIREFOX` / `WEBKIT` enum with safe parsing
+  (accepts `chrome`/`safari` aliases).
+
+### `pages/`
+- **`BasePage`** — base for all page objects. Wraps `click`, `type`, `text`,
+  `isVisible`, and `open()` (navigate to `base.url + path()`). Playwright locators
+  auto-wait, so explicit waits are rarely needed.
+- **`LoginPage` / `InventoryPage` / `CartPage` / `CheckoutPage`** — concrete
+  screens exposing intent-revealing actions annotated with Allure `@Step`, each
+  returning the next page object to enable fluent chains.
+
+### `utils/`
+- **`ScreenshotUtils`** — captures a full-page screenshot as bytes for Allure.
+
+### `src/test`
+- **`base/BaseTest`** — JUnit 5 lifecycle. `@BeforeEach` creates the page via
+  `PlaywrightFactory.initPage()`; `@AfterEach` tears it down. `@ExtendWith` wires
+  the failure-screenshot extension. `openLogin()` convenience navigates to the app.
+- **`base/ScreenshotOnFailure`** — JUnit 5 `TestWatcher`; on `testFailed` captures
+  a screenshot and attaches it to the Allure report.
+- **`tests/*`** — the actual tests, tagged `@Tag("smoke")` / `@Tag("regression")`.
+
+## Execution flow (single test)
+
+```
+JUnit 5 selects a test (optionally filtered by @Tag)
+   │
+   ▼
+@BeforeEach → PlaywrightFactory.initPage()
+   │             ├─ Playwright.create()
+   │             ├─ BrowserType.from(config "browser")
+   │             ├─ launch chromium | firefox | webkit
+   │             ├─ newContext(viewport, video) + timeouts
+   │             ├─ newPage()
+   │             └─ PlaywrightManager.set*  (ThreadLocal)
+   ▼
+Test method → openLogin().login(...).addToCart(...)...
+   │             └─ BasePage.click/type → Playwright Locator (auto-wait)
+   ▼
+JUnit 5 assertions
+   │  (on failure) ScreenshotOnFailure.testFailed → screenshot → Allure
+   ▼
+@AfterEach  → PlaywrightFactory.closePage() → close context/browser/playwright + unload()
+```
+
+## Threading model
+
+- JUnit 5 parallel execution is enabled in `junit-platform.properties`
+  (`parallel.enabled=true`, `mode.default=concurrent`, dynamic strategy).
+- Each test thread calls `initPage()` in `@BeforeEach`, getting its **own**
+  `Playwright`/`Browser`/`BrowserContext`/`Page` stored in `ThreadLocal`s.
+- Page objects read the page via `PlaywrightManager.getPage()` → the current
+  thread's page. No shared mutable state, so tests run concurrently and safely.
+- `unload()` removes the ThreadLocals in teardown to avoid leaks across pooled
+  threads.
+
+## Why Playwright (vs Selenium)
+
+- **Auto-waiting locators** remove most explicit waits and flakiness.
+- **Browser contexts** are cheap, isolated sessions — ideal for parallelism.
+- **Built-in tracing, video, and screenshots** make failures debuggable.
+- **One API across Chromium/Firefox/WebKit** with bundled browser binaries.
+
+## Extension points
+
+| Need | Where to extend |
+|------|-----------------|
+| New screen | Add a `*Page` in `pages/` extending `BasePage` |
+| New browser option | `PlaywrightFactory` launch/context options |
+| New config value | Add to `config.properties`, read via `ConfigReader` |
+| Cross-cutting behaviour | A JUnit 5 extension in `base/`, wired with `@ExtendWith` |
+| Auth reuse | Save/load `storageState` in the context (speeds up login) |
+
+See also: [WRITING_TESTS](WRITING_TESTS.md) · [CROSS_BROWSER](CROSS_BROWSER.md) · [CONFIGURATION](CONFIGURATION.md)
