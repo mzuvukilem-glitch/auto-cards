@@ -1,0 +1,76 @@
+# GitLab CI for the Appium mobile automation framework.
+# Mobile tests need a device/emulator; the real test jobs expect a runner tagged
+# appropriately (emulator-capable Linux, or a macOS runner for iOS).
+
+stages:
+  - build
+  - test
+  - report
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dfile.encoding=UTF-8"
+  MAVEN_CLI_OPTS: "-B"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository
+
+# Fast, device-free validation — runs on any shared runner.
+build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn $MAVEN_CLI_OPTS clean test-compile
+
+# Android tests. Requires a runner with an Android SDK + emulator (KVM).
+android-test:
+  stage: test
+  tags: [ android-emulator ]
+  script:
+    - npm install -g appium && appium driver install uiautomator2
+    - appium --log-level warn &
+    - sleep 5
+    # Boot/ensure an emulator is available on the runner, then:
+    - mvn $MAVEN_CLI_OPTS test -Dplatform=android
+  artifacts:
+    when: always
+    paths:
+      - target/allure-results
+      - screenshots/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+  allow_failure: false
+  rules:
+    - when: manual   # gate device jobs so pipelines don't block without a device
+
+# iOS tests. Requires a macOS runner with Xcode + simulators.
+ios-test:
+  stage: test
+  tags: [ macos, xcode ]
+  script:
+    - npm install -g appium && appium driver install xcuitest
+    - appium --log-level warn &
+    - sleep 5
+    - mvn $MAVEN_CLI_OPTS test -Dplatform=ios
+  artifacts:
+    when: always
+    paths:
+      - target/allure-results
+      - screenshots/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+  rules:
+    - when: manual
+
+# Render the Allure HTML report from whatever results were produced.
+allure-report:
+  stage: report
+  image: maven:3.9-eclipse-temurin-17
+  when: always
+  script:
+    - mvn $MAVEN_CLI_OPTS allure:report
+  artifacts:
+    paths:
+      - target/site/allure-maven-plugin
+    expire_in: 7 days
