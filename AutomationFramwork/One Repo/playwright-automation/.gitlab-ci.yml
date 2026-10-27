@@ -1,0 +1,68 @@
+# GitLab CI for the Playwright (Java) framework.
+# Playwright ships its own browsers, so no device/emulator is required — these
+# jobs run on standard shared runners.
+
+stages:
+  - build
+  - test
+  - report
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dfile.encoding=UTF-8"
+  MAVEN_CLI_OPTS: "-B"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository
+    - .cache/ms-playwright
+
+# Fast, browser-free validation.
+build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn $MAVEN_CLI_OPTS clean test-compile
+
+# Cross-browser matrix: one job per engine.
+.test-template: &test-template
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  variables:
+    PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
+  before_script:
+    - mvn $MAVEN_CLI_OPTS compile exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install --with-deps"
+  artifacts:
+    when: always
+    paths:
+      - target/allure-results
+      - videos/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+    expire_in: 7 days
+
+test:chromium:
+  <<: *test-template
+  script:
+    - mvn $MAVEN_CLI_OPTS test -Dbrowser=chromium -Dheadless=true
+
+test:firefox:
+  <<: *test-template
+  script:
+    - mvn $MAVEN_CLI_OPTS test -Dbrowser=firefox -Dheadless=true
+
+test:webkit:
+  <<: *test-template
+  script:
+    - mvn $MAVEN_CLI_OPTS test -Dbrowser=webkit -Dheadless=true
+
+allure-report:
+  stage: report
+  image: maven:3.9-eclipse-temurin-17
+  when: always
+  script:
+    - mvn $MAVEN_CLI_OPTS allure:report
+  artifacts:
+    paths:
+      - target/site/allure-maven-plugin
+    expire_in: 7 days

@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'PLATFORM', choices: ['android', 'ios'], description: 'Target platform')
+        string(name: 'SUITE', defaultValue: 'testng.xml', description: 'TestNG suite file')
+    }
+
+    environment {
+        MAVEN_OPTS = '-Dfile.encoding=UTF-8'
+    }
+
+    options {
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn -B clean compile'
+            }
+        }
+
+        stage('Fetch app binary') {
+            steps {
+                echo "Download the ${params.PLATFORM} build into src/test/resources/apps here"
+                // e.g. sh 'aws s3 cp s3://builds/app-debug.apk src/test/resources/apps/'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh "mvn -B test -Dplatform=${params.PLATFORM} -DsuiteXmlFile=${params.SUITE}"
+            }
+        }
+    }
+
+    post {
+        always {
+            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'screenshots/**/*.png', allowEmptyArchive: true
+            // Requires the Allure Jenkins plugin
+            allure includeProperties: false, results: [[path: 'allure-results']]
+        }
+    }
+}

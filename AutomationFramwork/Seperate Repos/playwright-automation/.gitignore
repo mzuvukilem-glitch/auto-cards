@@ -1,0 +1,27 @@
+# Build
+target/
+*.class
+
+# Reports & runtime output
+logs/
+allure-results/
+allure-report/
+test-results/
+screenshots/
+videos/
+traces/
+
+# Playwright browser downloads cache is global (~/.cache/ms-playwright) — not here
+
+# Env
+.env
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.DS_Store
+Thumbs.db
