@@ -28,10 +28,19 @@ public final class PlaywrightFactory {
 
         BrowserType browserType = BrowserType.from(ConfigReader.get("browser", "chromium"));
         boolean headless = ConfigReader.getBoolean("headless", true);
-        log.info("Launching {} (headless={})", browserType, headless);
         double slowMo = ConfigReader.getInt("slowmo.ms", 0);
 
         LaunchOptions options = new LaunchOptions().setHeadless(headless).setSlowMo(slowMo);
+
+        // Optional: drive an INSTALLED system browser via its channel (e.g. "chrome",
+        // "msedge", "chrome-beta") instead of Playwright's downloaded Chromium. This is the
+        // way to run in locked-down/offline environments where the Playwright CDN is blocked.
+        // Set -Dbrowser.channel=chrome (only applies to the chromium engine).
+        String channel = ConfigReader.get("browser.channel", "").trim();
+        if (!channel.isEmpty()) {
+            options.setChannel(channel);
+        }
+        log.info("Launching {} (headless={}, channel='{}')", browserType, headless, channel);
 
         Browser browser =
                 switch (browserType) {
@@ -45,8 +54,14 @@ public final class PlaywrightFactory {
                 new Browser.NewContextOptions()
                         .setViewportSize(
                                 ConfigReader.getInt("viewport.width", 1280),
-                                ConfigReader.getInt("viewport.height", 720))
-                        .setRecordVideoDir(Paths.get("videos"));
+                                ConfigReader.getInt("viewport.height", 720));
+
+        // Video recording requires Playwright's bundled ffmpeg (a CDN download). Keep it OFF by
+        // default so the suite runs in offline/locked-down environments; enable with
+        // -Drecord.video=true where ffmpeg is available.
+        if (ConfigReader.getBoolean("record.video", false)) {
+            contextOptions.setRecordVideoDir(Paths.get("videos"));
+        }
 
         // Optional: reuse a saved signed-in session to skip the login UI.
         // Enable with -Dreuse.auth=true once storage-state/auth.json has been saved.
