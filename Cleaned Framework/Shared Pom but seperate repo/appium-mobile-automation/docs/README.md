@@ -13,6 +13,7 @@ Start with the [project README](../README.md) for a quick overview, then dive in
 | [Locators & Interactions](LOCATORS_AND_INTERACTIONS.md) | Every locator strategy + every UI interaction, with examples |
 | [Advanced Features](ADVANCED_FEATURES.md) | Env profiles, device-cloud, server auto-start, soft assertions, logging, Spotless |
 | [Configuration](CONFIGURATION.md) | Properties files, capabilities, override precedence, environments |
+| [Device Setup](DEVICE_SETUP.md) | Local emulator/simulator, real devices, Docker, and device clouds (BrowserStack / Sauce Labs) |
 | [Cross-Platform](CROSS_PLATFORM.md) | Android/iOS locator strategy, platform selection, parallel runs |
 | [Reporting](REPORTING.md) | Allure wiring, annotations, screenshots, environment widget |
 | [CI/CD](CI_CD.md) | GitHub Actions, GitLab, Jenkins, Azure DevOps; Docker, device clouds, caching |
