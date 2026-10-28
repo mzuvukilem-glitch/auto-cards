@@ -43,6 +43,15 @@
         <assertj.version>3.26.3</assertj.version>
         <exec.maven.version>3.3.0</exec.maven.version>
 
+        <!-- Typed configuration binding (both frameworks): Spring Boot's Binder only, not the full starter -->
+        <spring.boot.version>3.3.4</spring.boot.version>
+
+        <!-- Code coverage (unit tests). jacocoArgLine is populated at runtime by JaCoCo's
+             prepare-agent (propertyName=jacocoArgLine) and appended to Surefire's argLine.
+             A blank default lives in pluginManagement config below (NOT as a <properties>
+             entry, which would shadow the runtime value and silently disable the agent). -->
+        <jacoco.version>0.8.12</jacoco.version>
+
         <!-- JUnit 5 tags excluded from the default gate run (override with -DexcludedGroups=). -->
         <excludedGroups>quarantine</excludedGroups>
     </properties>
@@ -115,6 +124,12 @@
                 <artifactId>poi-ooxml</artifactId>
                 <version>${poi.version}</version>
             </dependency>
+            <!-- Spring Boot Binder for typed/validated config (transitively pulls spring-core/context). -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot</artifactId>
+                <version>${spring.boot.version}</version>
+            </dependency>
 
             <!-- Playwright-specific -->
             <dependency>
@@ -146,6 +161,7 @@
                     <configuration>
                         <argLine>
                             -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                            ${jacocoArgLine}
                         </argLine>
                         <systemPropertyVariables>
                             <!-- Where Allure writes raw result files -->
@@ -175,6 +191,57 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>${exec.maven.version}</version>
+                </plugin>
+
+                <!-- Code coverage. prepare-agent writes the agent VM arg into ${jacocoArgLine},
+                     which the Surefire argLine above appends; report renders target/site/jacoco.
+                     Enabled per module (children declare the plugin to activate it). -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                    <configuration>
+                        <!-- Framework code lives under src/test; the module points
+                             build/outputDirectory at test-classes so report finds them. -->
+                        <sourceDirectory>${project.basedir}/src/test/java</sourceDirectory>
+                        <!-- Coverage targets the testable logic; device/browser-bound and
+                             reference classes are excluded as they need a real environment. -->
+                        <excludes>
+                            <exclude>**/pages/**</exclude>
+                            <exclude>**/tests/**</exclude>
+                            <exclude>**/listeners/**</exclude>
+                            <exclude>**/base/**</exclude>
+                            <exclude>**/driver/DriverFactory.*</exclude>
+                            <exclude>**/driver/DriverManager.*</exclude>
+                            <exclude>**/driver/AppiumServerManager.*</exclude>
+                            <exclude>**/driver/PlaywrightFactory.*</exclude>
+                            <exclude>**/driver/PlaywrightManager.*</exclude>
+                            <exclude>**/driver/api/**</exclude>
+                            <exclude>**/unit/**</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>jacoco-prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                            <configuration>
+                                <propertyName>jacocoArgLine</propertyName>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>jacoco-report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                            <configuration>
+                                <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                                <sourceDirectory>${project.basedir}/src/test/java</sourceDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
 
                 <!-- Code style: `mvn spotless:check` (CI) / `mvn spotless:apply` (fix). -->

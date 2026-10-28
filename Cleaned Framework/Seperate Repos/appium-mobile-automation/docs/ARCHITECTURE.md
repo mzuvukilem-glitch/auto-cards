@@ -9,7 +9,7 @@ responsible for, and how a test flows from invocation to report.
 |------|-------------------|
 | One test suite, two platforms | Platform-aware locators + per-thread `Platform` |
 | Safe parallel execution | `ThreadLocal` driver, one driver per test thread |
-| No hard-coded config | Externalised `.properties` + `-D` overrides |
+| No hard-coded config | Externalised `.properties` + `-D` overrides, bound into a typed `AutomationConfig` record via Spring Boot's `Binder` behind the `ConfigReader` facade |
 | Readable failures | Allure `@Step`, auto screenshots, environment widget |
 | Single source tree | test-automation project — all code lives under `src/test` (no `src/main`) |
 
@@ -47,12 +47,16 @@ Appium Server ──► UiAutomator2 (Android) / XCUITest (iOS) ──► Device
   host/port from `appium.server.url` so it matches where `DriverFactory` connects.
 
 ### `config/`
-- **`ConfigReader`** — loads `config.properties`; a matching `-Dkey=value` system
-  property always overrides the file value (so CI can change behaviour without
-  editing files).
+- **`ConfigReader`** — public facade with the same static getters; a matching
+  `-Dkey=value` system property always overrides the file value (so CI can change
+  behaviour without editing files).
+- **`ConfigProvider`** — loads and layers the properties and binds them with
+  Spring Boot's `Binder` into a typed, immutable `AutomationConfig` record
+  (`ConfigProvider.config()`), with fail-fast validation on load. Spring is used
+  for config binding only — no application context, no beans, no DI.
 - **`CapabilitiesBuilder`** — builds platform-specific W3C capabilities
-  (`UiAutomator2Options` / `XCUITestOptions`) from `android.properties` /
-  `ios.properties`.
+  (`UiAutomator2Options` / `XCUITestOptions`), now reading the typed
+  `AutomationConfig` instead of string config keys.
 
 ### `pages/`
 - **`BasePage`** — base for all page objects. Wraps element interactions

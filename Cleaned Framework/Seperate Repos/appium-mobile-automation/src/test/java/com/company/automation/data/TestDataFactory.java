@@ -22,6 +22,19 @@ import java.util.Locale;
  * </pre>
  *
  * <p>CSV files must have a header row whose column names match the target type's fields.
+ *
+ * <p><b>Environment-specific data:</b> when {@code -Denvironment=<env>} is set, an environment
+ * copy in a sibling sub-folder is preferred and the base file is the fallback. For
+ * {@code loginData.json} with {@code -Denvironment=staging} the lookup order is:
+ *
+ * <pre>
+ * testdata/staging/loginData.json   (used if present)
+ * testdata/loginData.json           (fallback)
+ * </pre>
+ *
+ * This mirrors the {@code config.&lt;env&gt;.properties} overlay model, so data that differs per
+ * environment (e.g. different test users) lives beside the shared default without changing call
+ * sites.
  */
 public final class TestDataFactory {
 
@@ -81,7 +94,20 @@ public final class TestDataFactory {
         return fileName.toLowerCase(Locale.ROOT).endsWith(".csv");
     }
 
+    /**
+     * Resolves the data file, preferring an environment-specific copy in a sibling sub-folder
+     * ({@code testdata/<env>/<fileName>}) when {@code -Denvironment} is set and that file exists;
+     * otherwise falls back to the base {@code testdata/<fileName>}.
+     */
     private static File dataFile(String fileName) {
+        String env = System.getProperty("environment", "").trim();
+        if (!env.isEmpty()) {
+            File envFile =
+                    new File(FrameworkConstants.TESTDATA_PATH + "/" + env + "/" + fileName);
+            if (envFile.exists()) {
+                return envFile;
+            }
+        }
         return new File(FrameworkConstants.TESTDATA_PATH + "/" + fileName);
     }
 }

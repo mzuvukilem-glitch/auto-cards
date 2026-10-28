@@ -44,9 +44,16 @@ without editing files:
 mvn test -Dbrowser=webkit -Dheadless=false -Dbase.url=https://staging.example.com
 ```
 
+`ConfigReader` is now a thin facade over a `ConfigProvider` that loads and layers
+the properties (base → `config.<env>.properties` overlay → `-D` overrides) and
+binds them with Spring Boot's `Binder` into a typed, immutable `PlaywrightConfig`
+record. The precedence above and the fail-fast validation on load are unchanged —
+only Spring's `Binder` is used (no application context, no beans, no `@Autowired`).
+
 ## Typed access
 
-`ConfigReader` exposes typed getters so callers don't parse strings:
+`ConfigReader` exposes typed getters so callers don't parse strings — the facade
+still works exactly as before:
 
 ```java
 ConfigReader.get("base.url");
@@ -54,6 +61,21 @@ ConfigReader.get("browser", "chromium");          // with default
 ConfigReader.getBoolean("headless", true);
 ConfigReader.getInt("default.timeout", 15000);
 ```
+
+New code can instead use the typed config record via `ConfigProvider.config()`,
+which avoids string keys and manual parsing:
+
+```java
+ConfigProvider.config().baseUrl();
+ConfigProvider.config().browserType();              // BrowserType enum
+ConfigProvider.config().browserOptions().headless();
+ConfigProvider.config().viewport().width();         // typed int
+ConfigProvider.config().timeouts().defaultMs();
+ConfigProvider.config().api().baseUrl();
+```
+
+Secrets (e.g. `api.token`) stay out of the typed config and are resolved
+separately by the `Secrets` class.
 
 ## Parallel execution (`junit-platform.properties`)
 

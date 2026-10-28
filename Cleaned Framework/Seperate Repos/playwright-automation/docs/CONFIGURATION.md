@@ -55,6 +55,23 @@ ConfigReader.getBoolean("headless", true);
 ConfigReader.getInt("default.timeout", 15000);
 ```
 
+`ConfigReader` keeps these same four getters, the same precedence, and the same
+fail-fast validation, but is now a facade over `ConfigProvider`. Under the hood
+`ConfigProvider` loads and layers the properties (base + `config.<env>.properties`
+overlay) from the classpath and binds them with Spring Boot's `Binder` into a
+typed, immutable `PlaywrightConfig` record. Spring is used for this binding only
+— there is no application context, no beans, and no `@Autowired`. New code can use
+the typed accessors directly:
+
+```java
+ConfigProvider.config().viewport().width();
+ConfigProvider.config().browserOptions().headless();
+ConfigProvider.config().timeouts().defaultMs();
+```
+
+Secrets (such as `api.token`) stay out of the typed config and are still resolved
+by the separate `Secrets` class.
+
 ## Parallel execution (`junit-platform.properties`)
 
 ```properties

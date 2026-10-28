@@ -125,7 +125,7 @@ flowchart TB
 
   subgraph CONFIG["🔧 Config Layer (src/test)"]
     direction LR
-    CR["ConfigReader<br/>config.properties + -D overrides"]
+    CR["ConfigReader facade<br/>config.properties + -D overrides<br/>→ typed (Spring Binder)"]
     BRT["BrowserType<br/>CHROMIUM · FIREFOX · WEBKIT"]
   end
 
@@ -222,7 +222,9 @@ flowchart TB
 │
 ├── <span class="dir">src/test/java/com/company/automation/</span>       <span class="cm"># framework + tests (test-automation project, no src/main)</span>
 │   ├── <span class="dir">config/</span>
-│   │   ├── <span class="file">ConfigReader.java</span>                 <span class="cm"># env overlays + startup validation (fail fast)</span>
+│   │   ├── <span class="file">ConfigReader.java</span>                 <span class="cm"># facade: 4 static getters over ConfigProvider (fail fast)</span>
+│   │   ├── <span class="file">ConfigProvider.java</span>               <span class="cm"># loads + layers props, Spring Binder → typed config</span>
+│   │   ├── <span class="file">PlaywrightConfig.java</span>             <span class="cm"># typed immutable config record (Spring Binder-backed)</span>
 │   │   └── <span class="file">BrowserType.java</span>                  <span class="cm"># CHROMIUM / FIREFOX / WEBKIT</span>
 │   ├── <span class="dir">data/</span>
 │   │   ├── <span class="file">TestDataFactory.java</span>              <span class="cm"># typed JSON/CSV test data (classpath)</span>
@@ -272,6 +274,11 @@ flowchart TB
 │   ├── <span class="file">config.qa.properties</span>                  <span class="cm"># overlay: -Denvironment=qa</span>
 │   ├── <span class="file">config.staging.properties</span>             <span class="cm"># overlay: -Denvironment=staging</span>
 │   ├── <span class="file">config.stress.properties</span>              <span class="cm"># overlay: -Denvironment=stress</span>
+│   ├── <span class="dir">testdata/</span>                             <span class="cm"># typed JSON/CSV data (classpath)</span>
+│   │   ├── <span class="file">loginData.json</span>                    <span class="cm"># base dataset</span>
+│   │   ├── <span class="file">loginData.csv</span>
+│   │   └── <span class="dir">staging/</span>                         <span class="cm"># per-env override: -Denvironment=staging (falls back to base)</span>
+│   │       └── <span class="file">loginData.json</span>
 │   ├── <span class="file">junit-platform.properties</span>             <span class="cm"># parallel execution</span>
 │   ├── <span class="file">allure.properties</span>                     <span class="cm"># Allure results dir + links</span>
 │   └── <span class="file">log4j2.xml</span>

@@ -18,6 +18,11 @@
     <name>Appium Mobile Automation</name>
     <description>Appium + TestNG + Maven mobile automation framework (Page Object Model)</description>
 
+    <properties>
+        <!-- Default TestNG suite = device gate. Override with -DsuiteXmlFile=unit-tests.xml. -->
+        <suiteXmlFile>testng.xml</suiteXmlFile>
+    </properties>
+
     <!--
       Versions, plugin versions and shared plugin config are inherited from
       automation-parent (dependencyManagement / pluginManagement). This POM only
@@ -73,9 +78,19 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
         </dependency>
+
+        <!-- Spring Boot Binder: typed + validated configuration behind ConfigReader. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
+        <!-- Framework code lives under src/test (no src/main), so compiled classes land in
+             test-classes. Point the project output dir there so JaCoCo's report (which reads
+             the build output directory) analyses the real classes. -->
+        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
         <plugins>
             <!-- Inherits version/argLine/allure-results config from the parent;
                  adds the Appium-specific TestNG suite file. -->
@@ -83,8 +98,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- Default = device gate suite. Run device-free unit tests with
+                         -DsuiteXmlFile=unit-tests.xml (used for coverage). -->
                     <suiteXmlFiles>
-                        <suiteXmlFile>testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${suiteXmlFile}</suiteXmlFile>
                     </suiteXmlFiles>
                 </configuration>
             </plugin>
@@ -97,6 +114,11 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+            <!-- Code coverage for the unit suite (configured in automation-parent). -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

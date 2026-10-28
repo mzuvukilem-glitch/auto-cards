@@ -64,12 +64,10 @@ public final class CapabilitiesBuilder {
 
         String farm = farm();
         return switch (farm) {
-            case "local" -> ConfigReader.get("appium.server.url", "http://127.0.0.1:4723");
+            case "local" -> appium().serverUrl();
             case "browserstack" -> "https://hub-cloud.browserstack.com/wd/hub";
             case "saucelabs" ->
-                    "https://ondemand."
-                            + ConfigReader.get("cloud.region", "us-west-1")
-                            + ".saucelabs.com/wd/hub";
+                    "https://ondemand." + cloud().region() + ".saucelabs.com/wd/hub";
             case "lambdatest" -> "https://mobile-hub.lambdatest.com/wd/hub";
             case "awsdevicefarm" ->
                     // AWS Device Farm issues a signed, per-run grid URL; it must be supplied.
@@ -98,8 +96,8 @@ public final class CapabilitiesBuilder {
                 Map<String, Object> bstack = new HashMap<>();
                 bstack.put("userName", Secrets.require("cloud.user"));
                 bstack.put("accessKey", Secrets.require("cloud.key"));
-                bstack.put("projectName", ConfigReader.get("cloud.project", "ATom Mobile"));
-                bstack.put("buildName", ConfigReader.get("cloud.build", "local-build"));
+                bstack.put("projectName", cloud().project());
+                bstack.put("buildName", cloud().build());
                 bstack.put("sessionName", platform + " session");
                 mutable.setCapability("bstack:options", bstack);
             }
@@ -107,7 +105,7 @@ public final class CapabilitiesBuilder {
                 Map<String, Object> sauce = new HashMap<>();
                 sauce.put("username", Secrets.require("cloud.user"));
                 sauce.put("accessKey", Secrets.require("cloud.key"));
-                sauce.put("build", ConfigReader.get("cloud.build", "local-build"));
+                sauce.put("build", cloud().build());
                 mutable.setCapability("sauce:options", sauce);
             }
             case "lambdatest" -> {
@@ -115,8 +113,8 @@ public final class CapabilitiesBuilder {
                 Map<String, Object> lt = new HashMap<>();
                 lt.put("username", Secrets.require("cloud.user"));
                 lt.put("accessKey", Secrets.require("cloud.key"));
-                lt.put("project", ConfigReader.get("cloud.project", "ATom Mobile"));
-                lt.put("build", ConfigReader.get("cloud.build", "local-build"));
+                lt.put("project", cloud().project());
+                lt.put("build", cloud().build());
                 lt.put("w3c", true);
                 lt.put("isRealMobile", true);
                 mutable.setCapability("lt:options", lt);
@@ -165,20 +163,32 @@ public final class CapabilitiesBuilder {
      * under {@code src/test/resources/apps/} is used.
      */
     private static String resolveApp(Properties p) {
-        String cloudApp = ConfigReader.get("cloud.app", "");
-        if (!cloudApp.isBlank()) {
+        String cloudApp = cloud().app();
+        if (cloudApp != null && !cloudApp.isBlank()) {
             return cloudApp;
         }
         return FrameworkConstants.APPS_PATH + "/" + p.getProperty("appFile");
     }
 
+    /** Typed config shortcuts (Spring-bound; see {@link AutomationConfig}). */
+    private static AutomationConfig.Cloud cloud() {
+        return ConfigProvider.config().cloud();
+    }
+
+    private static AutomationConfig.Appium appium() {
+        return ConfigProvider.config().appium();
+    }
+
     /** Current device farm, normalised. */
     private static String farm() {
-        return ConfigReader.get("device.farm", "local").toLowerCase().trim();
+        return cloud().farm().toLowerCase().trim();
     }
 
     private static String requireServerUrlFor(String farm) {
-        String url = ConfigReader.get("appium.server.url", "");
+        // The signed grid URL is per-run and must be supplied explicitly via -Dappium.server.url
+        // (it never belongs in the committed config file, which always defines a local default).
+        // So require the SYSTEM PROPERTY specifically rather than the merged config value.
+        String url = System.getProperty("appium.server.url", "");
         if (url.isBlank()) {
             throw new IllegalStateException(
                     "device.farm="

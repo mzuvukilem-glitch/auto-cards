@@ -232,8 +232,10 @@ flowchart TB
 │   │   ├── <span class="file">Platform.java</span>                 <span class="cm"># ANDROID / IOS enum</span>
 │   │   └── <span class="file">AppiumServerManager.java</span>      <span class="cm"># Programmatic Appium server start/stop</span>
 │   ├── <span class="dir">config/</span>
-│   │   ├── <span class="file">ConfigReader.java</span>             <span class="cm"># env overlays + startup validation (fail fast)</span>
-│   │   └── <span class="file">CapabilitiesBuilder.java</span>      <span class="cm"># W3C caps + device-cloud profiles (uses commons.Secrets)</span>
+│   │   ├── <span class="file">ConfigReader.java</span>             <span class="cm"># facade: 4 static getters over ConfigProvider (fail fast)</span>
+│   │   ├── <span class="file">ConfigProvider.java</span>           <span class="cm"># loads + layers props, Spring Binder → typed config</span>
+│   │   ├── <span class="file">AutomationConfig.java</span>         <span class="cm"># typed immutable config record (Spring Binder-backed)</span>
+│   │   └── <span class="file">CapabilitiesBuilder.java</span>      <span class="cm"># W3C caps + device-cloud profiles (reads typed config; uses commons.Secrets)</span>
 │   ├── <span class="dir">data/</span>
 │   │   ├── <span class="file">TestDataFactory.java</span>          <span class="cm"># typed JSON/CSV test data</span>
 │   │   └── <span class="file">UserData.java</span>                 <span class="cm"># login scenario record</span>
@@ -279,9 +281,11 @@ flowchart TB
 │   │   ├── <span class="file">config.stress.properties</span>      <span class="cm"># overlay: -Denvironment=stress</span>
 │   │   ├── <span class="file">android.properties</span>            <span class="cm"># UiAutomator2 capabilities</span>
 │   │   └── <span class="file">ios.properties</span>                <span class="cm"># XCUITest capabilities</span>
-│   ├── <span class="dir">testdata/</span>
+│   ├── <span class="dir">testdata/</span>                          <span class="cm"># base datasets (JSON/CSV)</span>
 │   │   ├── <span class="file">loginData.json</span>
-│   │   └── <span class="file">loginData.csv</span>
+│   │   ├── <span class="file">loginData.csv</span>
+│   │   └── <span class="dir">staging/</span>                      <span class="cm"># per-env override: -Denvironment=staging (falls back to base)</span>
+│   │       └── <span class="file">loginData.json</span>
 │   ├── <span class="dir">apps/</span>                              <span class="cm"># app-debug.apk / app.ipa (git-ignored)</span>
 │   ├── <span class="file">allure.properties</span>                 <span class="cm"># Allure results dir + issue/TMS link patterns</span>
 │   └── <span class="file">log4j2.xml</span>                         <span class="cm"># Logging config</span>

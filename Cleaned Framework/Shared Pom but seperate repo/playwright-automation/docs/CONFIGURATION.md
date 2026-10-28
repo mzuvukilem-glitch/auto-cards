@@ -55,6 +55,22 @@ ConfigReader.getBoolean("headless", true);
 ConfigReader.getInt("default.timeout", 15000);
 ```
 
+`ConfigReader` is now a facade over a Spring Boot `Binder`-backed `ConfigProvider`
+(precedence and fail-fast validation unchanged). The provider binds the layered
+properties into a typed, immutable `PlaywrightConfig` record, so new code can use
+typed accessors instead of string keys:
+
+```java
+ConfigProvider.config().baseUrl();
+ConfigProvider.config().browserType();            // CHROMIUM | FIREFOX | WEBKIT
+ConfigProvider.config().viewport().width();
+ConfigProvider.config().timeouts().defaultMs();
+```
+
+Spring is used only for this binding — no application context, no beans, no
+`@Autowired`. `PlaywrightFactory` reads the typed config, and secrets (e.g.
+`api.token`) stay out of it, still resolved by the separate `Secrets` class.
+
 ## Parallel execution (`junit-platform.properties`)
 
 ```properties

@@ -124,6 +124,24 @@ extension-based API also reads CSV — pass `"loginData.csv"` and it parses the 
 (header row matching the record field names) into the same typed records. See
 `DataDrivenLoginTest`.
 
+### Environment-specific test data
+
+`TestDataFactory` is environment-aware. When `-Denvironment=<env>` is set, it
+prefers an environment-specific data file in a sibling sub-folder and falls back
+to the base file if none exists — mirroring the `config.<env>.properties` overlay
+model (driven by the same `-Denvironment` system property). It works for both JSON
+and CSV, and call sites are unchanged (same `loadList(...)`/`load(...)` calls).
+
+Lookup order for a requested `loginData.json` (filesystem):
+
+- `src/test/resources/testdata/<env>/loginData.json` if present
+- else `src/test/resources/testdata/loginData.json`
+
+So `mvn test -Denvironment=staging` picks up
+`src/test/resources/testdata/staging/loginData.json` (a worked example ships in
+the repo), falling back to the base `src/test/resources/testdata/loginData.json`
+when no override is present.
+
 ### Correlation IDs + run metadata
 
 Each test thread gets a `testId` in the Log4j2 `ThreadContext`, printed as

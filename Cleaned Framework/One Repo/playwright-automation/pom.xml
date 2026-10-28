@@ -65,6 +65,12 @@
             <artifactId>jackson-dataformat-csv</artifactId>
         </dependency>
 
+        <!-- Spring Boot Binder: typed + validated configuration behind ConfigReader. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+
         <!-- AssertJ: fluent + soft assertions (JUnit 5 has no built-in SoftAssert). -->
         <dependency>
             <groupId>org.assertj</groupId>
@@ -74,6 +80,10 @@
     </dependencies>
 
     <build>
+        <!-- Framework code lives under src/test (no src/main), so compiled classes land in
+             test-classes. Point the project output dir there so JaCoCo's report (which reads
+             the build output directory) analyses the real classes. -->
+        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
         <plugins>
             <!-- Inherits version/argLine/allure-results config from the parent;
                  adds the Playwright-specific quarantine exclusion. -->
@@ -101,6 +111,11 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+            <!-- Code coverage for the unit tests (configured in automation-parent). -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

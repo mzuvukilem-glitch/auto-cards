@@ -80,6 +80,29 @@ mvn test -Dplatform=ios -Dappium.server.url=http://grid:4723
 The TestNG `platform` parameter in `testng.xml` also feeds `BaseTest.setUp`, and
 a `-Dplatform` override takes priority over the suite parameter.
 
+## Typed configuration
+
+`ConfigReader` is unchanged as the public facade — the same `get`/`getBoolean`/
+`getInt` getters, the same precedence, and the same fail-fast validation on load.
+Under the hood it now delegates to a `ConfigProvider` that loads and layers the
+properties and binds them with Spring Boot's `Binder` into a typed, immutable
+`AutomationConfig` record. Spring is used only for this binding — there is no
+application context, no beans, and no `@Autowired`; drivers, pages, and tests are
+unchanged.
+
+New code can read the typed accessors instead of string keys:
+
+```java
+ConfigProvider.config().platform();                 // e.g. "android"
+ConfigProvider.config().environment();              // e.g. "qa"
+ConfigProvider.config().appium().serverUrl();
+ConfigProvider.config().cloud().region();           // typed, not get("cloud.region", ...)
+```
+
+`CapabilitiesBuilder` reads this typed config directly. Secrets stay out of the
+typed config and are still resolved by the separate `Secrets` class
+(`cloud.user` / `cloud.key`).
+
 ## Adding a new capability
 
 1. Add the key to the relevant platform properties file.

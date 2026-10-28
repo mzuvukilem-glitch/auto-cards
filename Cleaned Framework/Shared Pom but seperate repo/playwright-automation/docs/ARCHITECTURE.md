@@ -9,7 +9,7 @@ from invocation to report.
 |------|-------------------|
 | One suite, any browser | `browser` config + `PlaywrightFactory` launches Chromium/Firefox/WebKit |
 | Safe parallel execution | `ThreadLocal` Playwright/Browser/Context/Page per test thread |
-| No hard-coded config | Externalised `config.properties` + `-D` overrides |
+| No hard-coded config | Externalised `config.properties` + `-D` overrides, bound + validated into a typed `PlaywrightConfig` record via Spring Boot's `Binder` behind the `ConfigReader` facade (config binding only — no context/beans) |
 | Readable failures | Allure `@Step`, auto screenshots, trace on failure |
 | Single source tree | Test-automation project: framework and tests both live under `src/test` (no `src/main`) |
 
@@ -25,7 +25,9 @@ Page Object Layer   pages/ (BasePage, *Page)            (src/test)
 Driver Layer        driver/ (Factory, Manager)          (src/test)
       │  one Playwright+Browser+Context+Page per thread
       ▼
-Config Layer        config/ (ConfigReader, BrowserType) (src/test)
+Config Layer        config/ (ConfigReader facade,        (src/test)
+                    ConfigProvider → typed PlaywrightConfig
+                    via Spring Binder, BrowserType)
       │  reads properties, selects browser engine
       ▼
 Playwright  ──►  Chromium | Firefox | WebKit  ──►  App under test
@@ -44,8 +46,13 @@ Playwright  ──►  Chromium | Firefox | WebKit  ──►  App under test
   browser state.
 
 ### `config/`
-- **`ConfigReader`** — loads `config.properties` from the classpath; a matching
-  `-Dkey=value` always overrides. Typed getters (`getBoolean`, `getInt`).
+- **`ConfigReader`** — public facade that loads `config.properties` from the
+  classpath; a matching `-Dkey=value` always overrides. Typed getters
+  (`getBoolean`, `getInt`), precedence, and fail-fast validation are unchanged.
+- **`ConfigProvider`** — loads and layers the properties and binds them with
+  Spring Boot's `Binder` into a typed, immutable `PlaywrightConfig` record exposed
+  via `ConfigProvider.config()`. Spring is used for config binding only — no
+  application context, no beans, no `@Autowired`.
 - **`BrowserType`** — `CHROMIUM` / `FIREFOX` / `WEBKIT` enum with safe parsing
   (accepts `chrome`/`safari` aliases).
 

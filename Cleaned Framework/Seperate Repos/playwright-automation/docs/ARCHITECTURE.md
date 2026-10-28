@@ -9,7 +9,7 @@ from invocation to report.
 |------|-------------------|
 | One suite, any browser | `browser` config + `PlaywrightFactory` launches Chromium/Firefox/WebKit |
 | Safe parallel execution | `ThreadLocal` Playwright/Browser/Context/Page per test thread |
-| No hard-coded config | Externalised `config.properties` + `-D` overrides |
+| No hard-coded config | Externalised `config.properties` + `-D` overrides, bound into a typed `PlaywrightConfig` record via Spring Boot's `Binder` behind the `ConfigReader` facade |
 | Readable failures | Allure `@Step`, auto screenshots, trace on failure |
 | Single source tree | test-automation project — all code lives under `src/test` (no `src/main`) |
 
@@ -44,8 +44,13 @@ Playwright  ──►  Chromium | Firefox | WebKit  ──►  App under test
   browser state.
 
 ### `config/`
-- **`ConfigReader`** — loads `config.properties` from the classpath; a matching
-  `-Dkey=value` always overrides. Typed getters (`getBoolean`, `getInt`).
+- **`ConfigReader`** — public facade over `ConfigProvider`; loads from the
+  classpath, a matching `-Dkey=value` always overrides. Same typed getters
+  (`getBoolean`, `getInt`), same precedence and fail-fast validation.
+- **`ConfigProvider`** — loads and layers the properties and binds them with
+  Spring Boot's `Binder` into a typed, immutable `PlaywrightConfig` record
+  (`ConfigProvider.config()`). Spring is used for config binding only — no
+  application context, no beans, no DI. `PlaywrightFactory` reads this typed config.
 - **`BrowserType`** — `CHROMIUM` / `FIREFOX` / `WEBKIT` enum with safe parsing
   (accepts `chrome`/`safari` aliases).
 

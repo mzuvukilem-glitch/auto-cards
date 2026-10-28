@@ -1,7 +1,8 @@
 package com.company.automation.driver;
 
 import com.company.automation.config.BrowserType;
-import com.company.automation.config.ConfigReader;
+import com.company.automation.config.ConfigProvider;
+import com.company.automation.config.PlaywrightConfig;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType.LaunchOptions;
@@ -26,9 +27,10 @@ public final class PlaywrightFactory {
         Playwright playwright = Playwright.create();
         PlaywrightManager.setPlaywright(playwright);
 
-        BrowserType browserType = BrowserType.from(ConfigReader.get("browser", "chromium"));
-        boolean headless = ConfigReader.getBoolean("headless", true);
-        double slowMo = ConfigReader.getInt("slowmo.ms", 0);
+        PlaywrightConfig cfg = ConfigProvider.config();
+        BrowserType browserType = cfg.browserType();
+        boolean headless = cfg.browserOptions().headless();
+        double slowMo = cfg.browserOptions().slowmoMs();
 
         LaunchOptions options = new LaunchOptions().setHeadless(headless).setSlowMo(slowMo);
 
@@ -36,7 +38,7 @@ public final class PlaywrightFactory {
         // "msedge", "chrome-beta") instead of Playwright's downloaded Chromium. This is the
         // way to run in locked-down/offline environments where the Playwright CDN is blocked.
         // Set -Dbrowser.channel=chrome (only applies to the chromium engine).
-        String channel = ConfigReader.get("browser.channel", "").trim();
+        String channel = cfg.browserOptions().channel().trim();
         if (!channel.isEmpty()) {
             options.setChannel(channel);
         }
@@ -52,21 +54,18 @@ public final class PlaywrightFactory {
 
         Browser.NewContextOptions contextOptions =
                 new Browser.NewContextOptions()
-                        .setViewportSize(
-                                ConfigReader.getInt("viewport.width", 1280),
-                                ConfigReader.getInt("viewport.height", 720));
+                        .setViewportSize(cfg.viewport().width(), cfg.viewport().height());
 
         // Video recording requires Playwright's bundled ffmpeg (a CDN download). Keep it OFF by
         // default so the suite runs in offline/locked-down environments; enable with
         // -Drecord.video=true where ffmpeg is available.
-        if (ConfigReader.getBoolean("record.video", false)) {
+        if (cfg.recordVideo()) {
             contextOptions.setRecordVideoDir(Paths.get("videos"));
         }
 
         // Optional: reuse a saved signed-in session to skip the login UI.
         // Enable with -Dreuse.auth=true once storage-state/auth.json has been saved.
-        if (ConfigReader.getBoolean("reuse.auth", false)
-                && com.company.automation.utils.AuthState.exists()) {
+        if (cfg.reuseAuth() && com.company.automation.utils.AuthState.exists()) {
             contextOptions.setStorageStatePath(com.company.automation.utils.AuthState.statePath());
             log.info(
                     "Reusing saved auth state from {}",
@@ -74,8 +73,8 @@ public final class PlaywrightFactory {
         }
 
         BrowserContext context = browser.newContext(contextOptions);
-        context.setDefaultTimeout(ConfigReader.getInt("default.timeout", 15000));
-        context.setDefaultNavigationTimeout(ConfigReader.getInt("navigation.timeout", 30000));
+        context.setDefaultTimeout(cfg.timeouts().defaultMs());
+        context.setDefaultNavigationTimeout(cfg.timeouts().navigationMs());
         PlaywrightManager.setContext(context);
 
         Page page = context.newPage();

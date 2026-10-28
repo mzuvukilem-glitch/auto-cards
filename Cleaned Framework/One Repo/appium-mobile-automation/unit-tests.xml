@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  Device-free UNIT suite: pure-logic tests only (config, data, enums, capability
+  assembly). No Appium server, emulator, or simulator required.
+  Run with:  mvn test -DsuiteXmlFile=unit-tests.xml
+-->
+<suite name="UnitSuite" verbose="1">
+    <test name="Unit (device-free)">
+        <groups>
+            <run>
+                <include name="unit"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="com.company.automation.unit"/>
+        </packages>
+    </test>
+</suite>

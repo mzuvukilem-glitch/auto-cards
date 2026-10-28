@@ -1,0 +1,8 @@
+[
+  {
+    "scenario": "staging_valid_login",
+    "username": "staging_user",
+    "password": "staging_secret",
+    "expectSuccess": true
+  }
+]

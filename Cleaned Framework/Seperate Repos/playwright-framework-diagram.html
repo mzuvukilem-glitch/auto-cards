@@ -125,7 +125,7 @@ flowchart TB
 
   subgraph CONFIG["🔧 Config Layer (src/test)"]
     direction LR
-    CR["ConfigReader<br/>config.properties + -D overrides"]
+    CR["ConfigReader (facade)<br/>config.properties + -D overrides<br/>typed via Spring Binder"]
     BRT["BrowserType<br/>CHROMIUM · FIREFOX · WEBKIT"]
   end
 
@@ -200,7 +200,7 @@ flowchart TB
   <ol>
     <li><strong>Test layer</strong> — a JUnit 5 test extends <code>BaseTest</code>; <code>@BeforeEach</code> asks the driver layer for a fresh page.</li>
     <li><strong>Driver layer</strong> — <code>PlaywrightFactory</code> reads config, picks the browser engine, launches it, and stores Playwright/Browser/Context/Page in <code>PlaywrightManager</code> ThreadLocals.</li>
-    <li><strong>Config layer</strong> — <code>ConfigReader</code> supplies base URL, browser, and timeouts; <code>-D</code> overrides win over the file.</li>
+    <li><strong>Config layer</strong> — <code>ConfigReader</code> supplies base URL, browser, and timeouts; <code>-D</code> overrides win over the file. It's now a facade over <code>ConfigProvider</code>, which binds the layered properties into a typed <code>PlaywrightConfig</code> record via Spring Boot's <code>Binder</code> (config binding only — no context or beans).</li>
     <li><strong>Page objects</strong> — the test calls intent-revealing methods on page objects, which drive auto-waiting Playwright locators.</li>
     <li><strong>Browser → app</strong> — Chromium / Firefox / WebKit executes actions against the app at <code>base.url</code>.</li>
     <li><strong>API layer (no browser)</strong> — API tests (<code>@Tag("api")</code>) extend <code>BaseApiTest</code>; <code>ApiRequestFactory</code> builds an <code>APIRequestContext</code>, service clients like <code>UserService</code> call endpoints, and <code>JsonUtils</code> parses responses against <code>api.base.url</code>.</li>
@@ -222,7 +222,9 @@ flowchart TB
 │
 ├── <span class="dir">src/test/java/com/company/automation/</span>       <span class="cm"># framework/support code + tests (no src/main)</span>
 │   ├── <span class="dir">config/</span>
-│   │   ├── <span class="file">ConfigReader.java</span>                 <span class="cm"># env overlays + startup validation (fail fast)</span>
+│   │   ├── <span class="file">ConfigReader.java</span>                 <span class="cm"># facade: 4 static getters, precedence + fail-fast validation</span>
+│   │   ├── <span class="file">ConfigProvider.java</span>               <span class="cm"># loads + layers props, binds via Spring Boot Binder (config only)</span>
+│   │   ├── <span class="file">PlaywrightConfig.java</span>             <span class="cm"># typed immutable config record (ConfigProvider.config())</span>
 │   │   ├── <span class="file">BrowserType.java</span>                  <span class="cm"># CHROMIUM / FIREFOX / WEBKIT</span>
 │   │   └── <span class="file">Secrets.java</span>                      <span class="cm"># -D &gt; env var &gt; .env; require() fails fast</span>
 │   ├── <span class="dir">data/</span>
@@ -273,6 +275,11 @@ flowchart TB
 │   ├── <span class="file">config.properties</span>                     <span class="cm"># base config (always loaded)</span>
 │   ├── <span class="file">config.qa.properties</span>                  <span class="cm"># overlay: -Denvironment=qa</span>
 │   ├── <span class="file">config.staging.properties</span>             <span class="cm"># overlay: -Denvironment=staging</span>
+│   ├── <span class="dir">testdata/</span>                             <span class="cm"># typed JSON/CSV data (classpath)</span>
+│   │   ├── <span class="file">loginData.json</span>                    <span class="cm"># base dataset</span>
+│   │   ├── <span class="file">loginData.csv</span>
+│   │   └── <span class="dir">staging/</span>                         <span class="cm"># per-env override: -Denvironment=staging (falls back to base)</span>
+│   │       └── <span class="file">loginData.json</span>
 │   ├── <span class="file">junit-platform.properties</span>             <span class="cm"># parallel execution</span>
 │   ├── <span class="file">allure.properties</span>                     <span class="cm"># Allure results dir + links</span>
 │   └── <span class="file">log4j2.xml</span>
