@@ -1,0 +1,4 @@
+scenario,username,password,expectSuccess
+valid_login,standard_user,secret_sauce,true
+locked_out_user,locked_out_user,secret_sauce,false
+invalid_password,standard_user,wrong_password,false

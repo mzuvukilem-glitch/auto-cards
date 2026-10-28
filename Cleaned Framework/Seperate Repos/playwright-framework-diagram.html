@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Playwright (Java) Test Automation Framework — Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #4ade80;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #11261b, #0f172a);
+  }
+  header h1 { margin: 0 0 .4rem; font-size: 1.7rem; color: #fff; }
+  header p { margin: 0; color: var(--muted); max-width: 72ch; }
+  main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  .diagram-wrap {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+  .mermaid { display: flex; justify-content: center; }
+  h2 {
+    color: var(--accent);
+    font-size: 1.2rem;
+    margin-top: 2.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: .6rem;
+  }
+  ol { padding-left: 1.3rem; }
+  ol li { margin: .4rem 0; }
+  code {
+    background: var(--panel);
+    padding: .1rem .4rem;
+    border-radius: 4px;
+    color: #86efac;
+    font-size: .9em;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--muted); }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .tree-wrap {
+    background: #0b1222;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    overflow-x: auto;
+  }
+  pre.tree {
+    margin: 0;
+    font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+    font-size: .82rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+    white-space: pre;
+  }
+  pre.tree .root { color: #4ade80; font-weight: 600; }
+  pre.tree .dir  { color: #fbbf24; }
+  pre.tree .file { color: #e2e8f0; }
+  pre.tree .cm   { color: #64748b; font-style: italic; }
+  footer {
+    padding: 1.5rem 2rem;
+    color: var(--muted);
+    font-size: .8rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Playwright (Java) Test Automation Framework</h1>
+  <p>End-to-end architecture for the Playwright for Java + JUnit 5 + Maven framework: how test code flows through page objects and the thread-safe driver layer into Chromium / Firefox / WebKit, plus a browser-free API layer (APIRequestContext) for HTTP testing, with Allure reporting and CI integration.</p>
+</header>
+
+<main>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TB
+
+  subgraph TEST["🧪 Test Layer (src/test)"]
+    direction LR
+    BT["BaseTest / BaseApiTest<br/>@BeforeEach / @AfterEach"]
+    TS["UI Tests<br/>Smoke · Login · Checkout"]
+    AT["API Tests<br/>UserApiTests @Tag(api)"]
+    SW["ScreenshotOnFailure<br/>(JUnit5 TestWatcher)"]
+  end
+
+  subgraph PAGES["📄 Page Object Layer (src/test)"]
+    direction LR
+    BP["BasePage<br/>click · type · text · open"]
+    PO["LoginPage · InventoryPage<br/>CartPage · CheckoutPage"]
+  end
+
+  subgraph APILAYER["🔌 API Layer (src/test)"]
+    direction LR
+    SVC["UserService<br/>service client (@Step)"]
+    JU["JsonUtils<br/>toJson · parse · fromJson"]
+  end
+
+  subgraph DRIVER["⚙️ Driver Layer (src/test)"]
+    direction TB
+    PF["PlaywrightFactory<br/>initPage / closePage"]
+    PM["PlaywrightManager<br/>ThreadLocal: Playwright·Browser·Context·Page"]
+    ARF["ApiRequestFactory / ApiManager<br/>ThreadLocal: APIRequestContext"]
+  end
+
+  subgraph CONFIG["🔧 Config Layer (src/test)"]
+    direction LR
+    CR["ConfigReader<br/>config.properties + -D overrides"]
+    BRT["BrowserType<br/>CHROMIUM · FIREFOX · WEBKIT"]
+  end
+
+  subgraph BROWSERS["🌐 Browser Engines"]
+    direction LR
+    CH["Chromium"]
+    FF["Firefox"]
+    WK["WebKit"]
+  end
+
+  APP["🖥️ App Under Test<br/>(base.url)"]
+  APISUT["🌐 API Under Test<br/>(api.base.url)"]
+
+  subgraph REPORT["📊 Reporting & CI"]
+    direction LR
+    AL["Allure<br/>@Step · screenshots · trace · video (opt-in)"]
+    CI["CI: GitHub Actions · GitLab<br/>Jenkins · Azure DevOps"]
+  end
+
+  %% UI flow
+  TS --> BP
+  BP --> PO
+  TS --> PF
+  BT --> PF
+  PF --> PM
+  PF --> CR
+  PF --> BRT
+  PM --> BROWSERS
+  BROWSERS --> APP
+
+  %% API flow (no browser)
+  AT --> SVC
+  SVC --> JU
+  AT --> ARF
+  ARF --> CR
+  ARF --> APISUT
+
+  SW -.-> AL
+  REPORT -.-> CI
+
+  classDef test fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+  classDef pages fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+  classDef driver fill:#dcfce7,stroke:#16a34a,color:#14532d;
+  classDef config fill:#fef9c3,stroke:#ca8a04,color:#713f12;
+  classDef browser fill:#d1fae5,stroke:#059669,color:#064e3b;
+  classDef app fill:#f1f5f9,stroke:#475569,color:#1e293b;
+  classDef report fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+  classDef api fill:#ffedd5,stroke:#ea580c,color:#7c2d12;
+
+  class BT,TS,AT,SW test;
+  class BP,PO pages;
+  class PF,PM,ARF driver;
+  class CR,BRT config;
+  class CH,FF,WK browser;
+  class APP,APISUT app;
+  class AL,CI report;
+  class SVC,JU api;
+    </pre>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch" style="background:#dbeafe;border:1px solid #2563eb"></i>Test layer</span>
+    <span><i class="swatch" style="background:#ede9fe;border:1px solid #7c3aed"></i>Page objects</span>
+    <span><i class="swatch" style="background:#ffedd5;border:1px solid #ea580c"></i>API layer</span>
+    <span><i class="swatch" style="background:#dcfce7;border:1px solid #16a34a"></i>Driver layer</span>
+    <span><i class="swatch" style="background:#fef9c3;border:1px solid #ca8a04"></i>Config layer</span>
+    <span><i class="swatch" style="background:#d1fae5;border:1px solid #059669"></i>Browser engines</span>
+    <span><i class="swatch" style="background:#fee2e2;border:1px solid #dc2626"></i>Reporting / CI</span>
+  </div>
+
+  <h2>How it flows, end to end</h2>
+  <ol>
+    <li><strong>Test layer</strong> — a JUnit 5 test extends <code>BaseTest</code>; <code>@BeforeEach</code> asks the driver layer for a fresh page.</li>
+    <li><strong>Driver layer</strong> — <code>PlaywrightFactory</code> reads config, picks the browser engine, launches it, and stores Playwright/Browser/Context/Page in <code>PlaywrightManager</code> ThreadLocals.</li>
+    <li><strong>Config layer</strong> — <code>ConfigReader</code> supplies base URL, browser, and timeouts; <code>-D</code> overrides win over the file.</li>
+    <li><strong>Page objects</strong> — the test calls intent-revealing methods on page objects, which drive auto-waiting Playwright locators.</li>
+    <li><strong>Browser → app</strong> — Chromium / Firefox / WebKit executes actions against the app at <code>base.url</code>.</li>
+    <li><strong>API layer (no browser)</strong> — API tests (<code>@Tag("api")</code>) extend <code>BaseApiTest</code>; <code>ApiRequestFactory</code> builds an <code>APIRequestContext</code>, service clients like <code>UserService</code> call endpoints, and <code>JsonUtils</code> parses responses against <code>api.base.url</code>.</li>
+    <li><strong>Reporting / CI</strong> — <code>@Step</code>s, failure screenshots, trace, and opt-in video (off by default, enabled with <code>-Drecord.video=true</code>) feed Allure; GitHub Actions, GitLab CI, Jenkins, or Azure DevOps install browsers, run tests, and publish the report. API tests run browser-free on any agent.</li>
+  </ol>
+
+  <h2>Project Structure (Java · Playwright · JUnit 5 · Maven)</h2>
+  <p>The scaffolded project lives at <code>playwright-automation/</code>.</p>
+
+  <div class="tree-wrap">
+<pre class="tree">
+<span class="root">playwright-automation/</span>
+│
+├── <span class="file">pom.xml</span>                                  <span class="cm"># deps + build (Playwright, JUnit5, Allure, AssertJ, Spotless)</span>
+├── <span class="file">README.md</span>
+├── <span class="file">.gitignore</span>
+├── <span class="file">.editorconfig</span>                            <span class="cm"># consistent editor style (UTF-8, LF, 4-space)</span>
+├── <span class="file">.env.example</span>                             <span class="cm"># copy to .env (git-ignored) for secrets</span>
+│
+├── <span class="dir">src/test/java/com/company/automation/</span>       <span class="cm"># framework/support code + tests (no src/main)</span>
+│   ├── <span class="dir">config/</span>
+│   │   ├── <span class="file">ConfigReader.java</span>                 <span class="cm"># env overlays + startup validation (fail fast)</span>
+│   │   ├── <span class="file">BrowserType.java</span>                  <span class="cm"># CHROMIUM / FIREFOX / WEBKIT</span>
+│   │   └── <span class="file">Secrets.java</span>                      <span class="cm"># -D &gt; env var &gt; .env; require() fails fast</span>
+│   ├── <span class="dir">data/</span>
+│   │   ├── <span class="file">TestDataFactory.java</span>              <span class="cm"># typed JSON/CSV test data (classpath)</span>
+│   │   └── <span class="file">LoginData.java</span>                    <span class="cm"># login scenario record</span>
+│   ├── <span class="dir">driver/</span>
+│   │   ├── <span class="file">PlaywrightFactory.java</span>            <span class="cm"># launches browser/context/page</span>
+│   │   ├── <span class="file">PlaywrightManager.java</span>            <span class="cm"># ThreadLocal holders (parallel-safe)</span>
+│   │   └── <span class="dir">api/</span>                            <span class="cm"># API driver (no browser)</span>
+│   │       ├── <span class="file">ApiRequestFactory.java</span>        <span class="cm"># builds APIRequestContext</span>
+│   │       └── <span class="file">ApiManager.java</span>               <span class="cm"># ThreadLocal APIRequestContext</span>
+│   ├── <span class="dir">pages/</span>
+│   │   ├── <span class="file">BasePage.java</span>                     <span class="cm"># click/type/text/open</span>
+│   │   ├── <span class="file">LoginPage.java</span>
+│   │   ├── <span class="file">InventoryPage.java</span>
+│   │   ├── <span class="file">CartPage.java</span>
+│   │   └── <span class="file">CheckoutPage.java</span>
+│   ├── <span class="dir">api/</span>                              <span class="cm"># API service clients (like page objects)</span>
+│   │   └── <span class="file">UserService.java</span>                 <span class="cm"># GET/POST/PUT/DELETE, returns APIResponse</span>
+│   ├── <span class="dir">utils/</span>
+│   │   ├── <span class="file">ScreenshotUtils.java</span>              <span class="cm"># full-page screenshot bytes</span>
+│   │   ├── <span class="file">JsonUtils.java</span>                    <span class="cm"># toJson · parse · fromJson (Jackson)</span>
+│   │   ├── <span class="file">AuthState.java</span>                    <span class="cm"># save/reuse storageState (skip login UI)</span>
+│   │   ├── <span class="file">AllureEnvironmentWriter.java</span>      <span class="cm"># Allure env widget (+ run metadata)</span>
+│   │   ├── <span class="file">RunMetadata.java</span>                  <span class="cm"># git SHA / branch / build / CI from env</span>
+│   │   └── <span class="file">Accessibility.java</span>                <span class="cm"># axe-core a11y violation check</span>
+│   ├── <span class="dir">base/</span>
+│   │   ├── <span class="file">BaseTest.java</span>                     <span class="cm"># lifecycle + env writer + testId MDC</span>
+│   │   ├── <span class="file">BaseApiTest.java</span>                  <span class="cm"># API lifecycle (no browser)</span>
+│   │   ├── <span class="file">ScreenshotOnFailure.java</span>          <span class="cm"># JUnit5 TestWatcher → Allure</span>
+│   │   ├── <span class="file">Retry.java</span>                        <span class="cm"># @Retry(n) annotation</span>
+│   │   └── <span class="file">RetryExtension.java</span>              <span class="cm"># re-runs flaky tests up to n times</span>
+│   └── <span class="dir">tests/</span>
+│       ├── <span class="file">SmokeTests.java</span>
+│       ├── <span class="file">LoginTests.java</span>                   <span class="cm"># @Test + @ParameterizedTest</span>
+│       ├── <span class="file">CheckoutTests.java</span>                <span class="cm"># end-to-end purchase</span>
+│       ├── <span class="file">DataDrivenLoginTest.java</span>         <span class="cm"># @MethodSource from TestDataFactory</span>
+│       ├── <span class="dir">examples/</span>                       <span class="cm"># runnable feature demos</span>
+│       │   ├── <span class="file">SoftAssertExampleTest.java</span>       <span class="cm"># AssertJ soft assertions</span>
+│       │   ├── <span class="file">RetryExampleTest.java</span>            <span class="cm"># @Retry demo</span>
+│       │   ├── <span class="file">NetworkMockingExampleTest.java</span>   <span class="cm"># page.route fulfill / abort</span>
+│       │   ├── <span class="file">AccessibilityExampleTest.java</span>    <span class="cm"># @Tag(a11y): axe-core</span>
+│       │   └── <span class="file">QuarantineExampleTest.java</span>       <span class="cm"># @Tag(quarantine)</span>
+│       └── <span class="dir">api/</span>
+│           └── <span class="file">UserApiTests.java</span>             <span class="cm"># @Tag(api): status/headers/schema/CRUD</span>
+│
+├── <span class="dir">src/test/resources/</span>
+│   ├── <span class="file">config.properties</span>                     <span class="cm"># base config (always loaded)</span>
+│   ├── <span class="file">config.qa.properties</span>                  <span class="cm"># overlay: -Denvironment=qa</span>
+│   ├── <span class="file">config.staging.properties</span>             <span class="cm"># overlay: -Denvironment=staging</span>
+│   ├── <span class="file">junit-platform.properties</span>             <span class="cm"># parallel execution</span>
+│   ├── <span class="file">allure.properties</span>                     <span class="cm"># Allure results dir + links</span>
+│   └── <span class="file">log4j2.xml</span>
+│
+├── <span class="dir">.github/</span>
+│   ├── <span class="dir">workflows/</span>                       <span class="cm"># CI: GitHub Actions</span>
+│   │   └── <span class="file">playwright-tests.yml</span>          <span class="cm"># install browsers → test → report</span>
+│   └── <span class="file">dependabot.yml</span>                    <span class="cm"># weekly Maven + Actions update PRs</span>
+├── <span class="file">.gitlab-ci.yml</span>                        <span class="cm"># CI: GitLab (cross-browser matrix)</span>
+├── <span class="file">azure-pipelines.yml</span>                   <span class="cm"># CI: Azure DevOps (Build + browser matrix)</span>
+├── <span class="file">Jenkinsfile</span>                           <span class="cm"># CI: Jenkins (BROWSER/HEADLESS params)</span>
+│
+└── <span class="dir">docs/</span>                                     <span class="cm"># extensive documentation</span>
+    ├── <span class="file">README.md</span> <span class="cm"># index</span>
+    ├── <span class="file">ARCHITECTURE.md</span> · <span class="file">GETTING_STARTED.md</span> · <span class="file">WRITING_TESTS.md</span>
+    ├── <span class="file">LOCATORS_AND_INTERACTIONS.md</span> · <span class="file">API_TESTING.md</span> · <span class="file">ADVANCED_FEATURES.md</span>
+    ├── <span class="file">CONFIGURATION.md</span> · <span class="file">CROSS_BROWSER.md</span> · <span class="file">REPORTING.md</span>
+    └── <span class="file">CI_CD.md</span> · <span class="file">CI_DEPLOYMENT.md</span> · <span class="file">TROUBLESHOOTING.md</span> · <span class="file">CONTRIBUTING.md</span>
+
+<span class="cm"># Workspace-level: .kiro/hooks/pre-commit-verify.json runs `mvn test-compile`
+# on both frameworks before a git commit and blocks it on failure.</span>
+</pre>
+  </div>
+
+  <h2>Why it's laid out this way</h2>
+  <ol>
+    <li><strong>all code under src/test</strong> — this is a test-automation project with no application code to ship, so there is no <code>src/main</code>. Framework/support code (config, driver, pages, utils, data) and the tests live together under <code>src/test</code>.</li>
+    <li><strong>ThreadLocal driver</strong> — <code>PlaywrightManager</code> gives each thread its own browser stack, enabling safe parallel runs.</li>
+    <li><strong>Page Object Model</strong> — locators and actions live in <code>pages/</code>, so UI changes touch one file.</li>
+    <li><strong>BaseTest + extension</strong> — centralises page lifecycle and auto-attaches failure screenshots without touching test code.</li>
+    <li><strong>Externalised config</strong> — browser, URL and timeouts come from <code>config.properties</code> with <code>-D</code> overrides, so no recompiling to switch.</li>
+    <li><strong>Auto-waiting locators</strong> — Playwright removes most explicit waits and flakiness compared with classic Selenium waits.</li>
+    <li><strong>UI and API share one toolchain</strong> — API tests use Playwright's <code>APIRequestContext</code> (no browser), reusing the same JUnit 5, Allure, config and ThreadLocal model; service clients in <code>api/</code> mirror page objects.</li>
+    <li><strong>Resilience &amp; quality tooling</strong> — <code>@Retry</code> for flaky tests, <code>AuthState</code> storageState reuse, network mocking, <code>config.&lt;env&gt;.properties</code> overlays, plus Spotless + <code>.editorconfig</code> and a pre-commit hook (see <code>docs/ADVANCED_FEATURES.md</code>).</li>
+  </ol>
+</main>
+
+<footer>
+  Playwright (Java) framework architecture · rendered with Mermaid.js · generated for the workspace
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+    themeVariables: { fontFamily: "Segoe UI, system-ui, sans-serif", fontSize: "14px" }
+  });
+</script>
+</body>
+</html>

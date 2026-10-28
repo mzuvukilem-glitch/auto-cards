@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appium Test Automation Framework — Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #11203b, #0f172a);
+  }
+  header h1 {
+    margin: 0 0 .4rem;
+    font-size: 1.7rem;
+    color: #fff;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 70ch;
+  }
+  main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .diagram-wrap {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+  .mermaid { display: flex; justify-content: center; }
+  h2 {
+    color: var(--accent);
+    font-size: 1.2rem;
+    margin-top: 2.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: .6rem;
+  }
+  ol { padding-left: 1.3rem; }
+  ol li { margin: .4rem 0; }
+  code {
+    background: var(--panel);
+    padding: .1rem .4rem;
+    border-radius: 4px;
+    color: #7dd3fc;
+    font-size: .9em;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  .swatch {
+    width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+  }
+  footer {
+    padding: 1.5rem 2rem;
+    color: var(--muted);
+    font-size: .8rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .tree-wrap {
+    background: #0b1222;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    overflow-x: auto;
+  }
+  pre.tree {
+    margin: 0;
+    font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+    font-size: .82rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+    white-space: pre;
+  }
+  pre.tree .root { color: #38bdf8; font-weight: 600; }
+  pre.tree .dir  { color: #fbbf24; }
+  pre.tree .file { color: #e2e8f0; }
+  pre.tree .cm   { color: #64748b; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Appium Test Automation Framework</h1>
+  <p>End-to-end architecture showing how test code flows through the Appium client and server down to the native automation agents running on Android and iOS targets, plus CI and reporting integration.</p>
+</header>
+
+<main>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TB
+
+  subgraph TEST["🧪 Test Layer"]
+    direction LR
+    TS["Test Scripts<br/>(TestNG / JUnit / pytest)"]
+    PO["Page Objects<br/>(POM)"]
+    TD["Test Data<br/>(JSON / CSV)"]
+  end
+
+  CLIENT["📚 Appium Client Library<br/>(Java / Python / JS / C#)<br/><i>translates calls → W3C WebDriver JSON</i>"]
+
+  subgraph SERVER["⚙️ Appium Server (Node.js)"]
+    direction TB
+    SM["Session Manager · Desired Capabilities · Command Router"]
+    subgraph DRIVERS["Drivers"]
+      direction LR
+      AND_D["UiAutomator2 / Espresso<br/>(Android)"]
+      IOS_D["XCUITest<br/>(iOS)"]
+    end
+  end
+
+  subgraph ANDROID["🤖 Android Target"]
+    direction TB
+    UA2["UiAutomator2 Server<br/>(on device, via ADB)"]
+    AAPP["App Under Test<br/>(Emulator / Device)"]
+    UA2 --> AAPP
+  end
+
+  subgraph IOS["🍎 iOS Target"]
+    direction TB
+    WDA["WebDriverAgent (WDA)<br/>(on device, via Xcode)"]
+    IAPP["App Under Test<br/>(Simulator / Device)"]
+    WDA --> IAPP
+  end
+
+  subgraph CI["🔁 CI / Reporting & Scaling"]
+    direction LR
+    JEN["CI: GitHub Actions · GitLab<br/>Jenkins · Azure DevOps"]
+    REP["Allure / Extent Reports"]
+    GRID["Appium Grid / Device Cloud<br/>(BrowserStack · Sauce Labs)"]
+  end
+
+  TS --> CLIENT
+  PO --> CLIENT
+  TD --> CLIENT
+  CLIENT -->|"HTTP · REST / JSON Wire"| SM
+  SM --> AND_D
+  SM --> IOS_D
+  AND_D --> UA2
+  IOS_D --> WDA
+
+  JEN -.-> TEST
+  SERVER -.-> REP
+  SERVER -.-> GRID
+
+  classDef test fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+  classDef client fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+  classDef server fill:#dcfce7,stroke:#16a34a,color:#14532d;
+  classDef android fill:#d1fae5,stroke:#059669,color:#064e3b;
+  classDef ios fill:#f1f5f9,stroke:#475569,color:#1e293b;
+  classDef ci fill:#fef9c3,stroke:#ca8a04,color:#713f12;
+
+  class TS,PO,TD test;
+  class CLIENT client;
+  class SM,AND_D,IOS_D server;
+  class UA2,AAPP android;
+  class WDA,IAPP ios;
+  class JEN,REP,GRID ci;
+    </pre>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch" style="background:#dbeafe;border:1px solid #2563eb"></i>Test layer</span>
+    <span><i class="swatch" style="background:#ede9fe;border:1px solid #7c3aed"></i>Client library</span>
+    <span><i class="swatch" style="background:#dcfce7;border:1px solid #16a34a"></i>Appium server</span>
+    <span><i class="swatch" style="background:#d1fae5;border:1px solid #059669"></i>Android target</span>
+    <span><i class="swatch" style="background:#f1f5f9;border:1px solid #475569"></i>iOS target</span>
+    <span><i class="swatch" style="background:#fef9c3;border:1px solid #ca8a04"></i>CI / reporting</span>
+  </div>
+
+  <h2>How it flows, end to end</h2>
+  <ol>
+    <li><strong>Test layer</strong> — test scripts use Page Objects and test data, driving actions through the Appium client library.</li>
+    <li><strong>Client library</strong> — converts calls into W3C WebDriver / JSON Wire Protocol HTTP requests.</li>
+    <li><strong>Appium server</strong> — manages the session from your <code>desired capabilities</code> and routes commands to the right driver.</li>
+    <li><strong>Drivers</strong> — UiAutomator2/Espresso for Android, XCUITest for iOS, translate commands into native automation calls.</li>
+    <li><strong>Target device</strong> — a per-platform agent (UiAutomator2 Server via ADB on Android, WebDriverAgent via Xcode on iOS) executes gestures and assertions against the app under test.</li>
+    <li><strong>CI / reporting</strong> — GitHub Actions, GitLab CI, Jenkins, or Azure DevOps kick off runs; grids and device clouds scale them; Allure produces reports.</li>
+  </ol>
+
+  <h2>Project Structure (Java · TestNG · Maven · POM)</h2>
+  <p>A scaffolded example of this framework lives in the workspace at
+     <code>appium-mobile-automation/</code>. The tree below maps each folder to its role.</p>
+
+  <div class="tree-wrap">
+<pre class="tree">
+<span class="root">appium-mobile-automation/</span>
+│
+├── <span class="file">pom.xml</span>                              <span class="cm"># Maven build + deps (Appium, TestNG, Allure, Spotless)</span>
+├── <span class="file">testng.xml</span>                           <span class="cm"># Gate suite (excludes quarantine group)</span>
+├── <span class="file">quarantine.xml</span>                        <span class="cm"># Runs ONLY known-flaky quarantined tests</span>
+├── <span class="file">README.md</span>
+├── <span class="file">.gitignore</span>
+├── <span class="file">.editorconfig</span>                        <span class="cm"># consistent editor style (UTF-8, LF, 4-space)</span>
+├── <span class="file">.env.example</span>                         <span class="cm"># copy to .env (git-ignored) for secrets</span>
+│
+├── <span class="dir">src/test/java/com/company/automation/</span>   <span class="cm"># framework/support code + tests (no src/main)</span>
+│   ├── <span class="dir">driver/</span>
+│   │   ├── <span class="file">DriverManager.java</span>            <span class="cm"># ThreadLocal&lt;AppiumDriver&gt; + Platform per thread</span>
+│   │   ├── <span class="file">DriverFactory.java</span>            <span class="cm"># Builds Android/iOS driver from capabilities</span>
+│   │   ├── <span class="file">Platform.java</span>                 <span class="cm"># ANDROID / IOS enum</span>
+│   │   └── <span class="file">AppiumServerManager.java</span>      <span class="cm"># Programmatic Appium server start/stop</span>
+│   ├── <span class="dir">config/</span>
+│   │   ├── <span class="file">ConfigReader.java</span>             <span class="cm"># env overlays + startup validation (fail fast)</span>
+│   │   ├── <span class="file">CapabilitiesBuilder.java</span>      <span class="cm"># W3C caps + device-cloud profiles</span>
+│   │   └── <span class="file">Secrets.java</span>                  <span class="cm"># -D &gt; env var &gt; .env; require() fails fast</span>
+│   ├── <span class="dir">data/</span>
+│   │   ├── <span class="file">TestDataFactory.java</span>          <span class="cm"># typed JSON/CSV test data</span>
+│   │   └── <span class="file">UserData.java</span>                 <span class="cm"># login scenario record</span>
+│   ├── <span class="dir">pages/</span>                             <span class="cm"># Page Object Model (Android + iOS)</span>
+│   │   ├── <span class="file">BasePage.java</span>                 <span class="cm"># Common actions: tap, type, waits</span>
+│   │   ├── <span class="file">PlatformLocator.java</span>          <span class="cm"># Resolves Android vs iOS locator at runtime</span>
+│   │   ├── <span class="file">LoginPage.java</span>
+│   │   ├── <span class="file">HomePage.java</span>
+│   │   ├── <span class="file">CheckoutPage.java</span>
+│   │   └── <span class="dir">examples/</span>                    <span class="cm"># reference catalogues (not real screens)</span>
+│   │       ├── <span class="file">LocatorShowcase.java</span>      <span class="cm"># every locator strategy, commented</span>
+│   │       └── <span class="file">InteractionShowcase.java</span>  <span class="cm"># every UI interaction / gesture, commented</span>
+│   ├── <span class="dir">utils/</span>
+│   │   ├── <span class="file">WaitUtils.java</span>                <span class="cm"># Explicit / fluent waits</span>
+│   │   ├── <span class="file">GestureUtils.java</span>             <span class="cm"># W3C swipe / scroll gestures</span>
+│   │   ├── <span class="file">JsonDataReader.java</span>           <span class="cm"># Reads JSON test data</span>
+│   │   ├── <span class="file">ExcelReader.java</span>              <span class="cm"># Reads .xlsx test data</span>
+│   │   ├── <span class="file">ScreenshotUtils.java</span>          <span class="cm"># Failure screenshots + Allure attach</span>
+│   │   ├── <span class="file">AllureEnvironmentWriter.java</span>  <span class="cm"># Allure env widget (+ run metadata)</span>
+│   │   ├── <span class="file">RunMetadata.java</span>              <span class="cm"># git SHA / branch / build / CI from env</span>
+│   │   └── <span class="file">AppLifecycle.java</span>             <span class="cm"># reset/background/activate/install/deepLink</span>
+│   ├── <span class="dir">constants/</span>
+│   │   └── <span class="file">FrameworkConstants.java</span>       <span class="cm"># Paths, timeouts, config keys</span>
+│   ├── <span class="dir">base/</span>
+│   │   └── <span class="file">BaseTest.java</span>                 <span class="cm"># lifecycle + server autostart + testId MDC</span>
+│   ├── <span class="dir">tests/</span>
+│   │   ├── <span class="file">LoginTests.java</span>
+│   │   ├── <span class="file">CheckoutTests.java</span>
+│   │   ├── <span class="file">SmokeTests.java</span>
+│   │   ├── <span class="file">DataDrivenLoginTest.java</span>     <span class="cm"># @DataProvider from TestDataFactory</span>
+│   │   └── <span class="dir">examples/</span>                    <span class="cm"># runnable feature demos</span>
+│   │       ├── <span class="file">SoftAssertExampleTest.java</span>   <span class="cm"># TestNG SoftAssert (collect all failures)</span>
+│   │       └── <span class="file">QuarantineExampleTest.java</span>   <span class="cm"># @Test(groups=quarantine)</span>
+│   └── <span class="dir">listeners/</span>
+│       ├── <span class="file">TestListener.java</span>             <span class="cm"># ITestListener: logs + screenshot on fail</span>
+│       └── <span class="file">RetryAnalyzer.java</span>            <span class="cm"># Retry flaky tests</span>
+│
+├── <span class="dir">src/test/resources/</span>
+│   ├── <span class="dir">config/</span>
+│   │   ├── <span class="file">config.properties</span>             <span class="cm"># base config (always loaded)</span>
+│   │   ├── <span class="file">config.qa.properties</span>          <span class="cm"># overlay: -Denvironment=qa</span>
+│   │   ├── <span class="file">config.staging.properties</span>     <span class="cm"># overlay: -Denvironment=staging</span>
+│   │   ├── <span class="file">android.properties</span>            <span class="cm"># UiAutomator2 capabilities</span>
+│   │   └── <span class="file">ios.properties</span>                <span class="cm"># XCUITest capabilities</span>
+│   ├── <span class="dir">testdata/</span>
+│   │   ├── <span class="file">loginData.json</span>
+│   │   └── <span class="file">loginData.csv</span>
+│   ├── <span class="dir">apps/</span>                              <span class="cm"># app-debug.apk / app.ipa (git-ignored)</span>
+│   ├── <span class="file">allure.properties</span>                 <span class="cm"># Allure results dir + issue/TMS link patterns</span>
+│   └── <span class="file">log4j2.xml</span>                         <span class="cm"># Logging config</span>
+│
+├── <span class="dir">logs/</span>                                 <span class="cm"># Runtime logs (git-ignored)</span>
+├── <span class="dir">screenshots/</span>                          <span class="cm"># Failure screenshots (git-ignored)</span>
+├── <span class="dir">allure-results/</span>                       <span class="cm"># Raw Allure data (git-ignored)</span>
+│
+├── <span class="dir">.github/</span>
+│   ├── <span class="dir">workflows/</span>                       <span class="cm"># CI: GitHub Actions</span>
+│   │   └── <span class="file">appium-tests.yml</span>              <span class="cm"># build + Android emulator + iOS (macOS)</span>
+│   └── <span class="file">dependabot.yml</span>                    <span class="cm"># weekly Maven + Actions update PRs</span>
+├── <span class="file">.gitlab-ci.yml</span>                        <span class="cm"># CI: GitLab (device jobs gated manual)</span>
+├── <span class="file">azure-pipelines.yml</span>                   <span class="cm"># CI: Azure DevOps (Build/Android/iOS stages)</span>
+│
+├── <span class="dir">ci/</span>
+│   ├── <span class="file">Jenkinsfile</span>                        <span class="cm"># CI: Jenkins (build → fetch app → test → report)</span>
+│   └── <span class="file">docker-compose.yml</span>                 <span class="cm"># Appium + emulator containers (optional)</span>
+│
+└── <span class="dir">docs/</span>                                 <span class="cm"># extensive documentation</span>
+    ├── <span class="file">README.md</span> <span class="cm"># index</span>
+    ├── <span class="file">ARCHITECTURE.md</span> · <span class="file">GETTING_STARTED.md</span> · <span class="file">WRITING_TESTS.md</span>
+    ├── <span class="file">LOCATORS_AND_INTERACTIONS.md</span> · <span class="file">ADVANCED_FEATURES.md</span>
+    ├── <span class="file">CONFIGURATION.md</span> · <span class="file">CROSS_PLATFORM.md</span> · <span class="file">REPORTING.md</span>
+    └── <span class="file">CI_CD.md</span> · <span class="file">CI_DEPLOYMENT.md</span> · <span class="file">TROUBLESHOOTING.md</span> · <span class="file">CONTRIBUTING.md</span>
+
+<span class="cm"># Workspace-level: .kiro/hooks/pre-commit-verify.json runs `mvn test-compile`
+# on both frameworks before a git commit and blocks it on failure.</span>
+</pre>
+  </div>
+
+  <h2>Why it's laid out this way</h2>
+  <ol>
+    <li><strong>all code under src/test</strong> — this is a test-automation project with no application code to ship, so there is no <code>src/main</code>. Framework/support code (drivers, config, pages, utils, data, constants) and the actual tests live together under <code>src/test</code>.</li>
+    <li><strong>ThreadLocal driver</strong> — <code>DriverManager</code> binds one driver per thread, enabling safe parallel execution across devices.</li>
+    <li><strong>Page Object Model</strong> — locators and screen actions live in <code>pages/</code>, so a UI change touches one file, not every test.</li>
+    <li><strong>BaseTest</strong> — centralises setup/teardown so every test class inherits driver lifecycle handling.</li>
+    <li><strong>Listeners</strong> — auto-screenshots on failure and retry-on-flaky, with no changes to test code.</li>
+    <li><strong>Externalised resources</strong> — capabilities, test data and app binaries sit in <code>resources/</code>, so you switch platform/environment without recompiling.</li>
+    <li><strong>Reference catalogues</strong> — <code>pages/examples/</code> documents every locator strategy and UI interaction in code (see <code>docs/LOCATORS_AND_INTERACTIONS.md</code>), so new contributors have a worked example of each.</li>
+    <li><strong>Environment profiles &amp; quality gates</strong> — <code>config.&lt;env&gt;.properties</code> overlays switch environments via <code>-Denvironment=</code>; Spotless + <code>.editorconfig</code> and a pre-commit hook keep formatting and builds consistent (see <code>docs/ADVANCED_FEATURES.md</code>).</li>
+  </ol>
+</main>
+
+<footer>
+  Appium framework architecture · rendered with Mermaid.js · generated for the ATom workspace
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+    themeVariables: {
+      fontFamily: "Segoe UI, system-ui, sans-serif",
+      fontSize: "14px"
+    }
+  });
+</script>
+</body>
+</html>

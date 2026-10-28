@@ -1,0 +1,4 @@
+scenario,username,password,expectHome
+valid_login,standard_user,secret_sauce,true
+invalid_password,standard_user,wrong_pass,false
+locked_out_user,locked_out_user,secret_sauce,false

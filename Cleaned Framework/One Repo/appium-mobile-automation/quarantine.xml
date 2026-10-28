@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  Runs ONLY the quarantined (known-flaky) tests, so they stay visible without
+  blocking the gate suite (testng.xml). Run with:
+    mvn test -DsuiteXmlFile=quarantine.xml
+-->
+<suite name="QuarantineSuite" parallel="tests" thread-count="2" verbose="1">
+    <listeners>
+        <listener class-name="com.company.automation.listeners.TestListener"/>
+    </listeners>
+    <test name="Quarantined - Android">
+        <parameter name="platform" value="android"/>
+        <groups>
+            <run>
+                <include name="quarantine"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="com.company.automation.tests.*"/>
+        </packages>
+    </test>
+</suite>
