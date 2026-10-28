@@ -25,6 +25,16 @@ appium.server.url=http://127.0.0.1:4723
 # enable with -Dappium.server.autostart=true)
 appium.server.autostart=false
 
+# Where tests run: local (default) | browserstack | saucelabs | lambdatest |
+# awsdevicefarm | perfecto. Cloud hub URL is auto-derived from this value.
+device.farm=local
+cloud.project=ATom Mobile   # cloud run label
+cloud.build=local-build     # cloud build label
+cloud.region=us-west-1      # Sauce Labs region (hub URL)
+# cloud.user / cloud.key are SECRETS — pass via -D, env (CLOUD_USER/CLOUD_KEY), or .env.
+# cloud.app=bs://… | storage:… | lt://…  (vendor-uploaded app; else local appFile)
+# cloud.host=<your-cloud>   # Perfecto only
+
 # Environment under test
 environment=qa
 base.api.url=https://qa.example.com/api

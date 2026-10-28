@@ -41,18 +41,24 @@ that URL (e.g. `-Dappium.server.url=http://127.0.0.1:4724`) to move both togethe
 
 ## Device-cloud profiles (BrowserStack / Sauce Labs)
 
-`CapabilitiesBuilder` applies vendor capabilities when `device.farm` is set.
-Credentials come from config/`-D` — never hard-code them.
+`CapabilitiesBuilder` applies vendor capabilities when `device.farm` is set and
+**auto-derives the hub URL**, so a cloud run is just the farm flag plus
+credentials (no separate URL to remember). Credentials come from config/`-D`
+(via `Secrets`) — never hard-code them.
 
 ```bash
 mvn test -Dplatform=android \
   -Ddevice.farm=browserstack \
-  -Dcloud.user=$BSTACK_USER -Dcloud.key=$BSTACK_KEY \
-  -Dappium.server.url=https://hub-cloud.browserstack.com/wd/hub
+  -Dcloud.user=$BSTACK_USER -Dcloud.key=$BSTACK_KEY
 ```
 
-Supported values: `local` (default), `browserstack`, `saucelabs`. Extend
-`applyDeviceFarm(...)` for other vendors.
+Supported values: `local` (default), `browserstack`, `saucelabs`, `lambdatest`,
+`awsdevicefarm`, `perfecto`. Pass a vendor-uploaded app with
+`-Dcloud.app=bs://… | storage:… | lt://…` (otherwise the local `appFile` is
+used); an explicit `-Dappium.server.url` always overrides the derived hub (AWS
+Device Farm requires it — the signed grid URL). Full per-provider guide:
+[DEVICE_SETUP](DEVICE_SETUP.md). Extend `applyDeviceFarm(...)` + `resolveServerUrl(...)`
+for other vendors.
 
 ## Soft assertions
 

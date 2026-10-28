@@ -1,8 +1,6 @@
 package com.company.automation.driver;
 
 import com.company.automation.config.CapabilitiesBuilder;
-import com.company.automation.config.ConfigReader;
-import com.company.automation.constants.FrameworkConstants;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.ios.IOSDriver;
 import java.net.MalformedURLException;
@@ -23,8 +21,9 @@ public final class DriverFactory {
 
     public static void initDriver(String platform) {
         try {
-            String serverUrlValue =
-                    ConfigReader.get(FrameworkConstants.KEY_SERVER_URL, "http://127.0.0.1:4723");
+            // The server URL is derived from device.farm: a cloud farm selects its hub URL,
+            // local uses appium.server.url. An explicit -Dappium.server.url always overrides.
+            String serverUrlValue = CapabilitiesBuilder.resolveServerUrl(platform);
             URL serverUrl = new URL(serverUrlValue);
             Platform resolved = Platform.from(platform);
             log.info("Initialising {} driver against Appium server {}", resolved, serverUrlValue);

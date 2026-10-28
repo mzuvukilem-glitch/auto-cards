@@ -1,24 +1,30 @@
 # Device & Device-Cloud Setup
 
 Where the tests actually run — a local emulator/simulator, a real device, or a
-device cloud — and how to wire each one. The framework picks the target from two
-config values:
+device cloud — and how to wire each one. The framework picks the target from a
+single config value:
 
-- **`device.farm`** — `local` (default), `browserstack`, or `saucelabs`.
-  Read by `CapabilitiesBuilder`; cloud values add the vendor capability block.
-- **`appium.server.url`** — where the driver connects. A local Appium server by
-  default (`http://127.0.0.1:4723`); a cloud hub URL for a device farm.
+- **`device.farm`** — `local` (default), `browserstack`, `saucelabs`,
+  `lambdatest`, `awsdevicefarm`, or `perfecto`. Read by `CapabilitiesBuilder`: a
+  cloud value adds the vendor capability block **and auto-derives the hub URL**,
+  so you only set the farm plus credentials — no separate URL to remember.
+- **`appium.server.url`** — the driver's endpoint. Used as-is for `local`
+  (default `http://127.0.0.1:4723`) and auto-derived for a cloud. Setting it
+  explicitly (`-Dappium.server.url=…`) always overrides the derived value.
 
 Everything is overridable with `-Dkey=value` (see [CONFIGURATION](CONFIGURATION.md)).
 Per-platform device details (`deviceName`, `platformVersion`, `appFile`) come from
 `src/test/resources/config/android.properties` and `ios.properties`.
 
-| Target | `device.farm` | `appium.server.url` | Needs |
-|--------|---------------|---------------------|-------|
+| Target | `device.farm` | Hub URL (auto-derived) | Needs |
+|--------|---------------|------------------------|-------|
 | Local Android emulator / device | `local` | local Appium (`:4723`) | Android SDK + emulator/device |
 | Local iOS simulator / device | `local` | local Appium (`:4723`) | macOS + Xcode |
-| BrowserStack | `browserstack` | `https://hub-cloud.browserstack.com/wd/hub` | `cloud.user` / `cloud.key` |
-| Sauce Labs | `saucelabs` | the Sauce hub URL for your region | `cloud.user` / `cloud.key` |
+| BrowserStack | `browserstack` | `hub-cloud.browserstack.com/wd/hub` | `cloud.user` / `cloud.key` |
+| Sauce Labs | `saucelabs` | `ondemand.<cloud.region>.saucelabs.com/wd/hub` | `cloud.user` / `cloud.key` |
+| LambdaTest | `lambdatest` | `mobile-hub.lambdatest.com/wd/hub` | `cloud.user` / `cloud.key` |
+| AWS Device Farm | `awsdevicefarm` | *(set `-Dappium.server.url` to the signed grid URL)* | AWS creds + grid URL |
+| Perfecto | `perfecto` | `<cloud.host>.perfectomobile.com/…/wd/hub` | `cloud.key` (token) + `cloud.host` |
 
 ---
 
@@ -130,11 +136,13 @@ iOS cannot be containerized (it needs macOS/Xcode) — use a mac host or a cloud
 
 ---
 
-## 5. Device clouds (`device.farm=browserstack` | `saucelabs`)
+## 5. Device clouds
 
-No local device needed. `CapabilitiesBuilder.applyDeviceFarm(...)` adds the
-vendor's capability block when `device.farm` is set, and you point
-`appium.server.url` at the vendor hub.
+No local device needed. Set `device.farm` to a cloud and
+`CapabilitiesBuilder` does the rest: it attaches the vendor's capability block
+**and auto-derives the hub URL** (`resolveServerUrl`), so a cloud run is a single
+flag plus credentials. Supported: `browserstack`, `saucelabs`, `lambdatest`,
+`awsdevicefarm`, `perfecto`.
 
 ### Credentials & secrets
 
@@ -149,56 +157,90 @@ resolves each key in this order (highest wins):
 
 | Key | Purpose | Required |
 |-----|---------|----------|
-| `cloud.user` | vendor username | yes (cloud runs) |
-| `cloud.key` | vendor access key | yes (cloud runs) |
-| `cloud.project` | project label (BrowserStack) | no (default `ATom Mobile`) |
+| `cloud.user` | vendor username (AWS: any non-blank marker) | yes (cloud runs; not Perfecto) |
+| `cloud.key` | vendor access key / token (Perfecto: security token) | yes (cloud runs) |
+| `cloud.app` | vendor-uploaded app ref (`bs://…`, `storage:…`, `lt://…`); else local `appFile` | no |
+| `cloud.project` | project label | no (default `ATom Mobile`) |
 | `cloud.build` | build label | no (default `local-build`) |
+| `cloud.region` | Sauce Labs data-centre region (hub URL) | no (default `us-west-1`) |
+| `cloud.host` | Perfecto cloud host (hub URL) | Perfecto only |
 
 In CI, store `cloud.user` / `cloud.key` as masked secrets and expose them as
-`CLOUD_USER` / `CLOUD_KEY` environment variables (or pass `-Dcloud.user=…`).
+`CLOUD_USER` / `CLOUD_KEY` environment variables (or pass `-Dcloud.user=…`). Set
+the target device/OS in `android.properties` / `ios.properties` (`deviceName`,
+`platformVersion`) to match a device the vendor offers.
 
 ### BrowserStack
 
-`device.farm=browserstack` attaches a `bstack:options` map (userName, accessKey,
-projectName, buildName, sessionName).
+Attaches a `bstack:options` map (userName, accessKey, projectName, buildName,
+sessionName). Hub URL auto-derived.
 
 ```bash
 export CLOUD_USER=your_bstack_user
 export CLOUD_KEY=your_bstack_key
 mvn test -Dplatform=android \
   -Ddevice.farm=browserstack \
-  -Dappium.server.url=https://hub-cloud.browserstack.com/wd/hub \
+  -Dcloud.app=bs://<uploaded-app-id> \
   -Dcloud.build="$(git rev-parse --short HEAD)"
 ```
 
-Set the target device/OS in `android.properties` / `ios.properties`
-(`deviceName`, `platformVersion`) to match a device BrowserStack offers. To run
-an app already uploaded to BrowserStack, set its `bs://…` app id as `appFile`
-(or extend `CapabilitiesBuilder` to pass it as the `app` capability).
-
 ### Sauce Labs
 
-`device.farm=saucelabs` attaches a `sauce:options` map (username, accessKey,
-build).
+Attaches a `sauce:options` map (username, accessKey, build). Hub URL auto-derived
+from `cloud.region` (e.g. `us-west-1`, `eu-central-1`).
 
 ```bash
 export CLOUD_USER=your_sauce_user
 export CLOUD_KEY=your_sauce_key
 mvn test -Dplatform=ios \
   -Ddevice.farm=saucelabs \
-  -Dappium.server.url=https://ondemand.<region>.saucelabs.com/wd/hub \
+  -Dcloud.region=eu-central-1 \
+  -Dcloud.app=storage:<uploaded-app-id> \
   -Dcloud.build="ci-$(date +%Y%m%d)"
 ```
 
-Use the hub URL for your Sauce region (e.g. `us-west-1`, `eu-central-1`). The
-uploaded app is referenced by its `storage:…` id as `appFile` (or via the `app`
-capability).
+### LambdaTest
 
-### Adding another cloud (e.g. LambdaTest)
+Attaches an `lt:options` map (username, accessKey, project, build, w3c,
+isRealMobile). Hub URL auto-derived.
 
-Add a `case` to `CapabilitiesBuilder.applyDeviceFarm(...)` that sets the vendor's
-options map from `Secrets.require("cloud.user")` / `cloud.key`, then run with
-`-Ddevice.farm=<name>` and that vendor's hub URL. Keep credentials in `Secrets`
+```bash
+export CLOUD_USER=your_lt_user
+export CLOUD_KEY=your_lt_key
+mvn test -Dplatform=android \
+  -Ddevice.farm=lambdatest \
+  -Dcloud.app=lt://<uploaded-app-id>
+```
+
+### AWS Device Farm
+
+AWS Device Farm authenticates through a **signed, per-run grid URL** (created via
+the AWS SDK/CLI), not per-session capabilities. Pass that URL explicitly:
+
+```bash
+export CLOUD_USER=aws            # non-blank marker; real auth is in the signed URL
+mvn test -Dplatform=android \
+  -Ddevice.farm=awsdevicefarm \
+  -Dappium.server.url="<signed-grid-url-from-aws>"
+```
+
+### Perfecto
+
+Attaches a `perfecto:options` map with the security token (`cloud.key`). The hub
+URL is built from `cloud.host`:
+
+```bash
+export CLOUD_KEY=your_perfecto_security_token
+mvn test -Dplatform=android \
+  -Ddevice.farm=perfecto \
+  -Dcloud.host=your-cloud        # → https://your-cloud.perfectomobile.com/.../wd/hub
+```
+
+### Adding another cloud
+
+Add a `case` to both `CapabilitiesBuilder.applyDeviceFarm(...)` (the vendor
+options map, from `Secrets.require(...)`) and `resolveServerUrl(...)` (the hub
+URL), then run with `-Ddevice.farm=<name>`. Keep credentials in `Secrets`
 (never inline).
 
 ---
@@ -208,7 +250,7 @@ options map from `Secrets.require("cloud.user")` / `cloud.key`, then run with
 | Situation | Use |
 |-----------|-----|
 | Day-to-day local dev | Local emulator/simulator (`local`) |
-| Deterministic CI without device upkeep | Device cloud (`browserstack` / `saucelabs`) |
+| Deterministic CI without device upkeep | Device cloud (`browserstack` / `saucelabs` / `lambdatest` / `awsdevicefarm` / `perfecto`) |
 | Self-hosted CI, Android only | Docker stack (§4) or a self-hosted runner |
 | Highest fidelity / specific hardware | Real devices (local or cloud real-device grid) |
 | iOS in CI | macOS agent, or a cloud (no containers) |
@@ -223,7 +265,10 @@ options map from `Secrets.require("cloud.user")` / `cloud.key`, then run with
 - **`Missing required secret 'cloud.user'`** — a cloud run without credentials;
   set `CLOUD_USER` / `CLOUD_KEY` (or `-Dcloud.user=…`).
 - **`Unsupported device.farm: <x>`** — `device.farm` must be `local`,
-  `browserstack`, or `saucelabs` (or a value you've added to `CapabilitiesBuilder`).
+  `browserstack`, `saucelabs`, `lambdatest`, `awsdevicefarm`, `perfecto` (or a
+  value you've added to `CapabilitiesBuilder`).
+- **`device.farm=awsdevicefarm requires an explicit appium.server.url`** — pass
+  the signed grid URL with `-Dappium.server.url=…`.
 - **Device not found** — `adb devices` (Android) / `xcrun simctl list` (iOS);
   make sure `deviceName` matches.
 - **App not found** — the binary must be under `src/test/resources/apps/` and
