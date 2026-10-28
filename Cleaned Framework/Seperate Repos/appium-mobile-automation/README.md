@@ -74,7 +74,8 @@ appium-mobile-automation/
 
 ## Running
 
-Start the Appium server (or let `AppiumServerManager` start it programmatically), then:
+Start the Appium server (or pass `-Dappium.server.autostart=true` to let
+`AppiumServerManager` start one, bound to `appium.server.url`), then:
 
 ```bash
 # Run the default suite

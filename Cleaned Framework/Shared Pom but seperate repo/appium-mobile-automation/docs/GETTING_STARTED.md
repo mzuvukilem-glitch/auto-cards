@@ -64,8 +64,9 @@ Either run it yourself:
 appium            # listens on http://127.0.0.1:4723
 ```
 
-…or let the framework start one programmatically by calling
-`AppiumServerManager.start()` from your `BaseTest` (see [ARCHITECTURE](ARCHITECTURE.md)).
+…or let the framework start one for you: run with `-Dappium.server.autostart=true`
+(off by default) and `BaseTest` boots a local server via `AppiumServerManager`,
+bound to the host/port of `appium.server.url` (see [ARCHITECTURE](ARCHITECTURE.md)).
 
 ## 6. Run tests
 

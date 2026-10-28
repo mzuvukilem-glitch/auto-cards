@@ -21,6 +21,9 @@ platform=android
 
 # Appium server endpoint
 appium.server.url=http://127.0.0.1:4723
+# Auto-start a local Appium server bound to the host/port above (default off;
+# enable with -Dappium.server.autostart=true)
+appium.server.autostart=false
 
 # Environment under test
 environment=qa

@@ -40,6 +40,10 @@ unaffected):
 mvn test -Dappium.server.autostart=true
 ```
 
+When enabled, the server is bound to the host and port parsed from
+`appium.server.url`, so it starts exactly where `DriverFactory` connects — set
+that URL (e.g. `-Dappium.server.url=http://127.0.0.1:4724`) to move both together.
+
 ## Device-cloud profiles (BrowserStack / Sauce Labs)
 
 `CapabilitiesBuilder` applies vendor capabilities when `device.farm` is set.

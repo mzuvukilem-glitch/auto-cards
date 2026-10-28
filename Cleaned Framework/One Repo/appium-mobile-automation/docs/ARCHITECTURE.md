@@ -42,7 +42,9 @@ Appium Server ──► UiAutomator2 (Android) / XCUITest (iOS) ──► Device
   active `Platform` in `ThreadLocal`s so parallel threads never share state.
 - **`Platform`** — `ANDROID` / `IOS` enum with safe parsing from a string.
 - **`AppiumServerManager`** — optional programmatic start/stop of a local Appium
-  server (useful in CI where no external server is managed).
+  server (useful in CI where no external server is managed). Gated by
+  `-Dappium.server.autostart=true` (off by default); when on, it binds to the
+  host/port from `appium.server.url` so it matches where `DriverFactory` connects.
 
 ### `config/`
 - **`ConfigReader`** — loads `config.properties`; a matching `-Dkey=value` system
