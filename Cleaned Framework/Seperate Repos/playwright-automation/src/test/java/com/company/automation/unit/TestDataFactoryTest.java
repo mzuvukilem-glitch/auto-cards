@@ -94,6 +94,20 @@ class TestDataFactoryTest {
     }
 
     @Test
+    @DisplayName("-Denvironment=staging also overrides CSV data (not just JSON)")
+    void environmentOverrideCsv() {
+        System.setProperty("environment", "staging");
+        try {
+            List<LoginData> rows =
+                    TestDataFactory.loadList("testdata/loginData.csv", LoginData.class);
+            assertEquals(1, rows.size());
+            assertEquals("staging_user", rows.get(0).username());
+        } finally {
+            System.clearProperty("environment");
+        }
+    }
+
+    @Test
     @DisplayName("env with no override folder falls back to the base dataset")
     void environmentFallback() {
         System.setProperty("environment", "qa"); // no testdata/qa/ folder exists

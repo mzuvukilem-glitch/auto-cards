@@ -65,6 +65,18 @@ public class TestDataFactoryTest {
     }
 
     @Test(groups = "unit")
+    public void environmentOverrideCsv() {
+        System.setProperty("environment", "staging");
+        try {
+            List<UserData> rows = TestDataFactory.loadList("loginData.csv", UserData.class);
+            assertEquals(rows.size(), 1);
+            assertEquals(rows.get(0).username(), "staging_user");
+        } finally {
+            System.clearProperty("environment");
+        }
+    }
+
+    @Test(groups = "unit")
     public void environmentFallback() {
         System.setProperty("environment", "qa"); // no testdata/qa/ folder exists
         try {

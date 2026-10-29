@@ -285,7 +285,8 @@ flowchart TB
 │   │   ├── <span class="file">loginData.json</span>
 │   │   ├── <span class="file">loginData.csv</span>
 │   │   └── <span class="dir">staging/</span>                      <span class="cm"># per-env override: -Denvironment=staging (falls back to base)</span>
-│   │       └── <span class="file">loginData.json</span>
+│   │       ├── <span class="file">loginData.json</span>
+│   │       └── <span class="file">loginData.csv</span>          <span class="cm"># env override works for CSV too</span>
 │   ├── <span class="dir">apps/</span>                              <span class="cm"># app-debug.apk / app.ipa (git-ignored)</span>
 │   ├── <span class="file">allure.properties</span>                 <span class="cm"># Allure results dir + issue/TMS link patterns</span>
 │   └── <span class="file">log4j2.xml</span>                         <span class="cm"># Logging config</span>

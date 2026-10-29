@@ -1,0 +1,2 @@
+﻿scenario,username,password,expectSuccess
+staging_valid_login,staging_user,staging_secret,true

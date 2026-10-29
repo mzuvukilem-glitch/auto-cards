@@ -1,0 +1,2 @@
+﻿scenario,username,password,expectHome
+staging_valid_login,staging_user,staging_secret,true

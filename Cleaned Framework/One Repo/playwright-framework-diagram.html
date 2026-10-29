@@ -278,7 +278,8 @@ flowchart TB
 │   │   ├── <span class="file">loginData.json</span>                    <span class="cm"># base dataset</span>
 │   │   ├── <span class="file">loginData.csv</span>
 │   │   └── <span class="dir">staging/</span>                         <span class="cm"># per-env override: -Denvironment=staging (falls back to base)</span>
-│   │       └── <span class="file">loginData.json</span>
+│   │       ├── <span class="file">loginData.json</span>
+│   │       └── <span class="file">loginData.csv</span>              <span class="cm"># env override works for CSV too</span>
 │   ├── <span class="file">junit-platform.properties</span>             <span class="cm"># parallel execution</span>
 │   ├── <span class="file">allure.properties</span>                     <span class="cm"># Allure results dir + links</span>
 │   └── <span class="file">log4j2.xml</span>
