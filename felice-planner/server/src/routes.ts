@@ -222,6 +222,13 @@ export function apiRoutes(stores: Stores): Router {
   org.put('/items/:id/rider', (req, res) => {
     res.json(scopeOf(res).repo.setItemRider(v.id(req.params.id), riderLinesFrom(body(req))));
   });
+  // Copies this booking's rider onto other headline acts and hosts, replacing their riders.
+  org.post('/items/:id/rider/copy', (req, res) => {
+    const { toItemIds } = body(req);
+    if (!Array.isArray(toItemIds)) throw new v.HttpError(400, 'toItemIds must be a list');
+    if (toItemIds.length > 100) throw new v.HttpError(400, 'A rider can be copied to at most 100 bookings at once');
+    res.json(scopeOf(res).repo.copyItemRider(v.id(req.params.id), toItemIds.map((x) => v.id(x, 'toItemIds'))));
+  });
 
   // --- Resident DJs (individual DJs, each with a rate, linked to a week) -----
   org.post('/weeks/:id/resident-djs', (req, res) => {

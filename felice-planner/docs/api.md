@@ -161,6 +161,16 @@ Body: `{ "lines": [ { "name": "Hennessey VSOP", "unitCost": 897, "quantity": 1 }
 | `unitCost` | Required, rand including VAT, 0 to 1,000,000. |
 | `quantity` | A whole number from 1 to 9999. |
 
+
+#### `POST /api/orgs/:org/items/:id/rider/copy`
+Body: `{ "toItemIds": [12, 13] }`. Copies the rider of line `:id` onto each of those lines, replacing the rider they had, and returns the updated lines in the order given. The items are copied with the prices they have, and a typed-in rider cost is copied as typed. The lines can be in any week of the organisation. All or nothing.
+
+| Field | Rules |
+|---|---|
+| `toItemIds` | A list of 1 to 100 line ids. Each must be a headline act or host of this organisation and not the source itself. |
+
+The source must be a headline act or host that has a rider (`400` otherwise). Unknown lines, or lines of another organisation, answer `404`.
+
 ### Rider prices
 
 Each organisation's price list of the items a rider is made of. Names are unique per organisation, ignoring capitals (`409` otherwise).

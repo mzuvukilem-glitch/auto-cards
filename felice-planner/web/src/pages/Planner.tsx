@@ -190,6 +190,17 @@ function WeekEditor({ weekId, onChanged, onDeleted }: { weekId: number; onChange
     setData({ ...week, items });
     onChanged();
   };
+  // A rider can be copied onto any other headline act or host in the week; the copies replace their riders.
+  const tools: RiderTools = {
+    ...riderTools,
+    copyTo: {
+      targets: week.items.filter((i) => hasRiderCost(i.category)),
+      copy: async (fromId, toIds) => {
+        const copied = new Map((await api.copyRider(fromId, toIds)).map((i) => [i.id, i]));
+        replaceItems(week.items.map((i) => copied.get(i.id) ?? i));
+      },
+    },
+  };
   const djSignature = week.items
     .filter((i) => i.isDj)
     .map((i) => `${i.id}:${i.name}:${i.amount}`)
@@ -244,7 +255,7 @@ function WeekEditor({ weekId, onChanged, onDeleted }: { weekId: number; onChange
             label={c.label}
             color={c.color}
             hint={c.key === 'rider' ? RIDER_HINT : undefined}
-            rider={hasRiderCost(c.key) ? riderTools : undefined}
+            rider={hasRiderCost(c.key) ? tools : undefined}
             items={week.items.filter((i) => i.category === c.key)}
             onItemsChange={(changed) => replaceItems([...week.items.filter((i) => i.category !== c.key), ...changed])}
           />

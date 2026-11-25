@@ -219,6 +219,53 @@ describe('rider prices and the rider calculator', () => {
     error(await app.call('PUT', `/orgs/alur/items/${act.id}/rider`, { lines: [] }), 404, /Line item not found/);
   });
 
+  test('copying a rider onto other headline acts and hosts replaces their riders', async () => {
+    const week = await newWeek();
+    const other = await newWeek();
+    const source = (await headliner(week.id, 40000, 0, 'Source')).body;
+    await app.call('PUT', `/orgs/felice/items/${source.id}/rider`, { lines: [{ name: 'Red bull', unitCost: 16.83, quantity: 3 }, { name: 'Hubbly', unitCost: 25, quantity: 2 }] });
+    const host = (await addItem(week.id, { category: 'hosts', name: 'Host', amount: 8000, riderCost: 0 })).body;
+    const act = (await headliner(week.id, 1000, 0, 'Has a rider')).body;
+    await app.call('PUT', `/orgs/felice/items/${act.id}/rider`, { lines: [{ name: 'Water', unitCost: 5, quantity: 1 }] });
+    const next = (await headliner(other.id, 500, 0, 'Next week')).body;
+
+    const copied = await app.call('POST', `/orgs/felice/items/${source.id}/rider/copy`, { toItemIds: [host.id, act.id, next.id, host.id] });
+    assert.equal(copied.status, 200, JSON.stringify(copied.body));
+    assert.deepEqual(copied.body.map((i: { id: number }) => i.id), [host.id, act.id, next.id], 'each booking once, in the order given');
+    assert.ok(copied.body.every((i: { riderCost: number; riderItems: number }) => i.riderCost === 100.49 && i.riderItems === 2));
+    for (const id of [host.id, act.id, next.id]) {
+      const rider = (await app.call('GET', `/orgs/felice/items/${id}/rider`)).body;
+      assert.deepEqual(rider.lines.map((l: { name: string }) => l.name), ['Red bull', 'Hubbly'], 'the old items are replaced, not added to');
+      assert.equal(rider.total, 100.49);
+    }
+    assert.equal((await app.call('GET', `/orgs/felice/items/${source.id}/rider`)).body.total, 100.49, 'the source is unchanged');
+
+    const typed = (await headliner(week.id, 1, 250, 'Typed in')).body;
+    const onto = (await headliner(week.id, 1, 0, 'Onto typed')).body;
+    await app.call('PUT', `/orgs/felice/items/${onto.id}/rider`, { lines: [{ name: 'Water', unitCost: 5, quantity: 1 }] });
+    const plain = await app.call('POST', `/orgs/felice/items/${typed.id}/rider/copy`, { toItemIds: [onto.id] });
+    assert.deepEqual([plain.body[0].riderCost, plain.body[0].riderItems], [250, 0], 'a typed-in cost is copied as typed, and the old items go');
+  });
+
+  test('a rider can only be copied from and to headline acts and hosts, inside the organisation, and only if there is one', async () => {
+    const week = await newWeek();
+    const act = (await headliner(week.id, 1, 100, 'Act')).body;
+    const empty = (await headliner(week.id, 1, 0, 'Empty')).body;
+    const mc = (await addItem(week.id, { category: 'standard', name: 'MC', amount: 1 })).body;
+    const copy = (from: number, body: unknown, org = 'felice') => app.call('POST', `/orgs/${org}/items/${from}/rider/copy`, body);
+    error(await copy(mc.id, { toItemIds: [act.id] }), 400, /Only headline acts and hosts/);
+    error(await copy(empty.id, { toItemIds: [act.id] }), 400, /Empty has no rider to copy/);
+    error(await copy(act.id, { toItemIds: [mc.id] }), 400, /MC is not a headline act or host/);
+    error(await copy(act.id, { toItemIds: [act.id] }), 400, /different booking/);
+    error(await copy(act.id, { toItemIds: [] }), 400, /at least one booking/);
+    error(await copy(act.id, { toItemIds: [99999] }), 404, /Line item not found/);
+    error(await copy(act.id, { toItemIds: [empty.id] }, 'alur'), 404, /Line item not found/);
+    error(await copy(act.id, {}), 400, /toItemIds must be a list/);
+    error(await copy(act.id, { toItemIds: Array.from({ length: 101 }, () => empty.id) }), 400, /at most 100/);
+    error(await copy(act.id, { toItemIds: ['x'] }), 400, /toItemIds must be a whole number/);
+    assert.equal((await app.call('GET', `/orgs/felice/items/${empty.id}/rider`)).body.total, 0, 'a refused copy changes nothing');
+  });
+
   test('a rider with bad items is refused, naming the item', async () => {
     const act = (await headliner((await newWeek()).id)).body;
     const put = (lines: unknown) => app.call('PUT', `/orgs/felice/items/${act.id}/rider`, { lines });

@@ -332,6 +332,28 @@ describe('the week editor', () => {
     expect(txt(document.querySelector('.week-total'))).toContain(zar(5000 + 200 + 1000));
   });
 
+  it('copies a rider onto other headline acts and hosts, and the week total follows', async () => {
+    const host = line({ id: 14, weekId: 5, category: 'hosts', name: 'Xoli', amount: 800, riderCost: 0 });
+    const mock = install(detail([act({ riderCost: 120, riderItems: 2 }), host, standard()]), {
+      'POST /orgs/felice/items/10/rider/copy': [{ ...host, riderCost: 120, riderItems: 2 }],
+    });
+    const { user } = open();
+    await screen.findByRole('heading', { name: 'May 2026 W1' });
+    expect(screen.queryByRole('button', { name: 'Copy rider of Xoli' })).toBeNull();
+    expect(txt(document.querySelector('.week-total'))).toContain(zar(5000 + 120 + 800 + 1000));
+    await user.click(screen.getByRole('button', { name: 'Copy rider of DJ Max' }));
+    const panel = screen.getByRole('group', { name: 'Copy the rider of DJ Max' });
+    expect(within(panel).getAllByRole('checkbox')).toHaveLength(1);
+    await user.click(within(panel).getByRole('checkbox', { name: /^Xoli/ }));
+    await user.click(within(panel).getByRole('button', { name: 'Copy rider' }));
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'Copy the rider of DJ Max' })).toBeNull());
+    expect(mock.of('POST', '/orgs/felice/items/10/rider/copy')[0]!.body).toEqual({ toItemIds: [14] });
+    expect((screen.getByLabelText('Rider cost for Xoli') as HTMLInputElement).value).toBe('120');
+    expect(screen.getByRole('button', { name: 'Rider calculator for Xoli' }).textContent).toBe('Rider: 2 items');
+    expect(screen.getByRole('button', { name: 'Copy rider of Xoli' })).toBeTruthy();
+    expect(txt(document.querySelector('.week-total'))).toContain(zar(5000 + 120 + 800 + 120 + 1000));
+  });
+
   it('works without prices when the price list cannot be loaded', async () => {
     install(detail([act()]), { 'GET /orgs/felice/rider-prices': fail(500, 'No prices') });
     const { user } = open();

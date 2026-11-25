@@ -4,6 +4,7 @@ import type { LineItem } from '../../shared/types.ts';
 import type { ItemInput, RiderLineInput } from './api.ts';
 import { ErrorBanner } from './components.tsx';
 import { errorMessage, money } from './lib.ts';
+import { CopyRiderPanel } from './CopyRider.tsx';
 import { RiderCalculator, type RiderTools } from './RiderCalculator.tsx';
 
 /** How a list of lines is saved. The planner saves into a week; the recurring page saves into the standing list. */
@@ -150,7 +151,10 @@ function ItemRow({
   const [notes, setNotes] = useState(item.notes);
   const [error, setError] = useState<string | null>(null);
   const [calcOpen, setCalcOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const calculated = (item.riderItems ?? 0) > 0;
+  // Only a booking that has a rider can be copied.
+  const copyTo = riderTools?.copyTo && (item.riderCost > 0 || calculated) ? riderTools.copyTo : undefined;
 
   // Follow the saved values when they change from outside this row (for example after a file import
   // updates a rate). Each field has its own effect, so typing in one field is never overwritten by
@@ -233,6 +237,17 @@ function ItemRow({
                   {calculated ? `Rider: ${item.riderItems} item${item.riderItems === 1 ? '' : 's'}` : 'Calculate'}
                 </button>
               )}
+              {copyTo && (
+                <button
+                  type="button"
+                  className="rider-button"
+                  aria-expanded={copyOpen}
+                  aria-label={`Copy rider of ${item.name}`}
+                  onClick={() => setCopyOpen((o) => !o)}
+                >
+                  Copy rider
+                </button>
+              )}
             </td>
             <td className="num strong">{money((parseMoney(amount) ?? 0) + (parseMoney(rider) ?? 0))}</td>
           </>
@@ -255,6 +270,13 @@ function ItemRow({
               onSaved={(saved) => onSaved({ ...item, ...saved })}
               onClose={() => setCalcOpen(false)}
             />
+          </td>
+        </tr>
+      )}
+      {copyOpen && copyTo && (
+        <tr>
+          <td colSpan={6}>
+            <CopyRiderPanel item={item} targets={copyTo.targets} copy={copyTo.copy} onClose={() => setCopyOpen(false)} />
           </td>
         </tr>
       )}

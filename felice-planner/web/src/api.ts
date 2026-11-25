@@ -120,6 +120,7 @@ function orgApi(slug: string) {
 
     itemRider: (id: number) => request<RiderCalc>('GET', `${base}/items/${id}/rider`),
     saveRider: (id: number, lines: RiderLineInput[]) => request<{ item: Item; rider: RiderCalc }>('PUT', `${base}/items/${id}/rider`, { lines }),
+    copyRider: (fromId: number, toItemIds: number[]) => request<Item[]>('POST', `${base}/items/${fromId}/rider/copy`, { toItemIds }),
     riderPrices: () => request<RiderPrice[]>('GET', `${base}/rider-prices`),
     addRiderPrice: (price: RiderPriceInput) => request<RiderPrice>('POST', `${base}/rider-prices`, price),
     updateRiderPrice: (id: number, price: RiderPriceInput) => request<RiderPrice>('PUT', `${base}/rider-prices/${id}`, price),

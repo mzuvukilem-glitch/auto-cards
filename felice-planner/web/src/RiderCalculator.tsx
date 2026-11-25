@@ -10,6 +10,13 @@ export interface RiderTools {
   prices: RiderPrice[];
   load: (itemId: number) => Promise<RiderCalc>;
   save: (itemId: number, lines: RiderLineInput[]) => Promise<{ item: Item; rider: RiderCalc }>;
+  /** When given, a booking that has a rider offers "Copy rider" to other headline acts and hosts. */
+  copyTo?: {
+    /** Every headline act and host the rider can be copied to. */
+    targets: Item[];
+    /** Copies the rider of one booking onto the others, and updates them wherever they are shown. */
+    copy: (fromId: number, toIds: number[]) => Promise<void>;
+  };
 }
 
 interface Row {

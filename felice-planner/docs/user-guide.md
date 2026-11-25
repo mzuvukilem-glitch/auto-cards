@@ -141,6 +141,8 @@ To load many items at once, use **Import price list**: choose an Excel (.xlsx) o
 
 The booking's rider cost is now that total, and it appears under **Rider Costs** in every report, as before. The button then reads *Rider: 4 items*; press it to see or change the items. While a rider is calculated, the rider cost box cannot be typed over, so the figure always matches its items. **Clear items** then **Save** sets the rider cost to R0,00, after which it can be typed again.
 
+**Copying a rider to another act or host.** When a headline act or host has a rider, a **Copy rider** button appears under its rider cost. Press it, tick the other headline acts and hosts in the same week that should have the same rider, and press **Copy rider**. The items and the rider cost are copied. A booking that already had a rider has it **replaced**, and the list says which ones. A typed-in rider cost is copied as typed.
+
 A rider **keeps the prices it was worked out with**. Changing the price list never changes a week you have already done. Recurring hosts are copied into new weeks with their rider cost, not their items.
 
 ## 5. Dashboard

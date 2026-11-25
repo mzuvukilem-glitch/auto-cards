@@ -581,6 +581,34 @@ export function createRepo(db: DatabaseSync, orgIds: readonly number[]) {
       return { item: requireItem(itemId), rider: toRiderCalc(requireItem(itemId)) };
     },
 
+    /**
+     * Copies the rider of one headline act or host onto others, replacing whatever rider they had. The items are
+     * copied with the prices they have now, and a rider cost that was typed in is copied as typed. All or nothing.
+     */
+    copyItemRider(fromId: number, toIds: number[]): Item[] {
+      writeOrg();
+      const source = requireItem(fromId);
+      if (!hasRiderCost(source.category)) throw new HttpError(400, 'Only headline acts and hosts have a rider');
+      const lines = q.riderLinesByItem.all(fromId) as Row[];
+      if (lines.length === 0 && source.riderCost === 0) throw new HttpError(400, `${source.name} has no rider to copy`);
+      const targets = [...new Set(toIds)].map((id) => {
+        const target = requireItem(id);
+        if (target.id === fromId) throw new HttpError(400, 'Choose a different booking to copy the rider to');
+        if (!hasRiderCost(target.category)) throw new HttpError(400, `${target.name} is not a headline act or host`);
+        return target;
+      });
+      if (targets.length === 0) throw new HttpError(400, 'Choose at least one booking to copy the rider to');
+      const costCents = Math.round(source.riderCost * 100);
+      transaction(db, () => {
+        for (const target of targets) {
+          q.deleteRiderLines.run(target.id);
+          lines.forEach((l, i) => q.insertRiderLine.run(target.id, String(l.name), Number(l.unit_cents), Number(l.quantity), i));
+          q.setItemRider.run(costCents, target.id);
+        }
+      });
+      return targets.map((t) => requireItem(t.id));
+    },
+
     recurringItems(): RecurringItem[] {
       return (q.allRecurring.all(...ids) as Row[]).map(toRecurring);
     },
