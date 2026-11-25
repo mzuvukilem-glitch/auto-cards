@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1558.5" width="1640" height="1558.5" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">Alur &amp; Felice Planner: system architecture</title>
+<desc id="dsc">Layered architecture: a React single-page app in the browser calls an Express API over JSON. The API reads and writes one SQLite database that holds Felice and Alur separately, and builds combined master reports.</desc>
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.t{font-weight:700;fill:#0f172a}.b{fill:#334155}.lbl{fill:#334155;font-weight:600}
+.layer{font-weight:700;letter-spacing:.06em;fill:#0f172a}
+.card{fill:#fff;stroke:#94a3b8;stroke-width:1.2}
+.ui{fill:#eef0ff;stroke:#4338ca;stroke-width:1.6}.uic{fill:#fff;stroke:#818cf8;stroke-width:1.2}
+.api{fill:#ecfdf5;stroke:#0f766e;stroke-width:1.6}.apic{fill:#fff;stroke:#5eead4;stroke-width:1.2}
+.db{fill:#fffbeb;stroke:#b45309;stroke-width:1.6}.dbc{fill:#fff;stroke:#fbbf24;stroke-width:1.2}
+.shared{fill:#f1f5f9;stroke:#64748b;stroke-width:1.6}.sec{fill:#fef2f2;stroke:#b91c1c;stroke-width:1.6}.secc{fill:#fff;stroke:#fca5a5;stroke-width:1.2}
+.tool{fill:#f8fafc;stroke:#94a3b8;stroke-width:1.6}
+.arrow{stroke:#334155;stroke-width:2;fill:none}.dash{stroke-dasharray:6 5;stroke:#64748b}
+.title{font-size:26px;font-weight:800;fill:#0f172a}.sub{font-size:14px;fill:#475569}
+</style>
+</defs>
+<rect width="1640" height="1558.5" fill="#f8fafc"/>
+<text class="title" x="30" y="42">Alur &amp; Felice Planner · system architecture</text>
+<text class="sub" x="30" y="66">React single-page app → Express 5 API → SQLite. One database holds Felice and Alur separately; the master view combines them read-only.</text>
+<rect class="card" x="30" y="90" width="380" height="83.0" rx="10"/>
+<text class="t" x="42" y="112" font-size="14">Planner user</text>
+<text class="b" x="42" y="132" font-size="12.5">Signs in with one shared password. Works inside</text>
+<text class="b" x="42" y="148.5" font-size="12.5">Felice, inside Alur, or in the combined master view.</text>
+<rect class="card" x="430" y="90" width="460" height="83.0" rx="10"/>
+<text class="t" x="442" y="112" font-size="14">Excel (.xlsx) files</text>
+<text class="b" x="442" y="132" font-size="12.5">In: the original planner layout, or a file exported from the app.</text>
+<text class="b" x="442" y="148.5" font-size="12.5">Out: per-organisation and combined reports.</text>
+<line class="arrow" x1="220" y1="173.0" x2="220" y2="207.0" marker-end="url(#a)"/>
+<text class="lbl" x="232" y="194.0" font-size="12" text-anchor="start">uses the app</text>
+<line class="arrow" x1="660" y1="207.0" x2="660" y2="173.0" marker-end="url(#a)"/>
+<text class="lbl" x="672" y="193.0" font-size="12" text-anchor="start">import</text>
+<line class="arrow" x1="790" y1="173.0" x2="790" y2="207.0" marker-end="url(#a)"/>
+<text class="lbl" x="802" y="193.0" font-size="12" text-anchor="start">export</text>
+<rect class="ui" x="30" y="207.0" width="1250" height="351.0" rx="14"/>
+<text class="layer" x="46" y="231.0" font-size="13">BROWSER · React 19 single-page app (built with Vite, served as static files)</text>
+<rect class="uic" x="50" y="243.0" width="290" height="175.5" rx="10"/>
+<text class="t" x="62" y="265.0" font-size="14">Shell &amp; routing</text>
+<text class="b" x="62" y="285.0" font-size="12.5">• main.tsx mounts the router.</text>
+<text class="b" x="62" y="303.5" font-size="12.5">• App.tsx: sign-in gate, sidebar with</text>
+<text class="b" x="72" y="320.0" font-size="12.5">the organisation switcher (logos),</text>
+<text class="b" x="72" y="336.5" font-size="12.5">route table.</text>
+<text class="b" x="62" y="355.0" font-size="12.5">• org.tsx: OrgLayout and useOrg() give</text>
+<text class="b" x="72" y="371.5" font-size="12.5">every page its organisation and API.</text>
+<rect class="uic" x="360" y="243.0" width="290" height="175.5" rx="10"/>
+<text class="t" x="372" y="265.0" font-size="14">Organisation pages  /o/:org/…</text>
+<text class="b" x="372" y="285.0" font-size="12.5">• Dashboard</text>
+<text class="b" x="372" y="303.5" font-size="12.5">• Weekly planner (weeks and line items)</text>
+<text class="b" x="372" y="322.0" font-size="12.5">• Recurring costs</text>
+<text class="b" x="372" y="340.5" font-size="12.5">• Rider prices · Reports · Plan vs actual</text>
+<text class="b" x="372" y="359.0" font-size="12.5">• Import &amp; export</text>
+<text class="b" x="372" y="377.5" font-size="12.5">• Remounted when you switch</text>
+<text class="b" x="382" y="394.0" font-size="12.5">organisation, so no data leaks across.</text>
+<rect class="uic" x="670" y="243.0" width="290" height="175.5" rx="10"/>
+<text class="t" x="682" y="265.0" font-size="14">Master pages  /master/…</text>
+<text class="b" x="682" y="285.0" font-size="12.5">• Master dashboard: combined KPIs and</text>
+<text class="b" x="692" y="301.5" font-size="12.5">charts</text>
+<text class="b" x="682" y="320.0" font-size="12.5">• Combined reports · Plan vs actual</text>
+<text class="b" x="692" y="336.5" font-size="12.5">(with combined Excel export)</text>
+<text class="b" x="682" y="355.0" font-size="12.5">• Compare: organisation vs</text>
+<text class="b" x="692" y="371.5" font-size="12.5">organisation, or month vs month</text>
+<rect class="uic" x="980" y="243.0" width="280" height="175.5" rx="10"/>
+<text class="t" x="992" y="265.0" font-size="14">Shared UI</text>
+<text class="b" x="992" y="285.0" font-size="12.5">• components.tsx: PeriodPicker,</text>
+<text class="b" x="1002" y="301.5" font-size="12.5">Toggle, Kpi, Card</text>
+<text class="b" x="992" y="320.0" font-size="12.5">• ItemEditor.tsx: the line editor used</text>
+<text class="b" x="1002" y="336.5" font-size="12.5">by the planner and recurring costs</text>
+<text class="b" x="992" y="355.0" font-size="12.5">• logos.tsx · lib.ts (useAsync, money</text>
+<text class="b" x="1002" y="371.5" font-size="12.5">format) · Recharts</text>
+<rect class="uic" x="50" y="436.5" width="1210" height="103.5" rx="10"/>
+<text class="t" x="62" y="458.5" font-size="14">API client  (api.ts)</text>
+<text class="b" x="62" y="478.5" font-size="12.5">• request(): adds the X-Requested-With: felice header, sends the session cookie, and turns any 401 into the sign-in screen.</text>
+<text class="b" x="62" y="497.0" font-size="12.5">• api.org(slug): weeks · items · recurring · reports · actuals · rider prices &amp; riders · import, scoped to one organisation.</text>
+<text class="b" x="62" y="515.5" font-size="12.5">• api.master: combined summary · top · compare · variance · export.  api.me / login / logout / organisations.</text>
+<line class="arrow" x1="650" y1="558.0" x2="650" y2="628.0" marker-end="url(#a)" marker-start="url(#a)"/>
+<text class="lbl" x="664" y="597.0" font-size="12" text-anchor="start">HTTP + JSON  /api/*   (cookie: fp_session)</text>
+<text class="b" x="1010" y="586.0" font-size="12">Dev: Vite :5173 proxies /api to :4000</text>
+<text class="b" x="1010" y="604.0" font-size="12">Prod: Express also serves web/dist</text>
+<rect class="api" x="30" y="628.0" width="1250" height="503.0" rx="14"/>
+<text class="layer" x="46" y="652.0" font-size="13">API SERVER · Node.js 24+ / Express 5 · TypeScript runs natively (no build step)</text>
+<rect class="apic" x="50" y="664.0" width="226" height="116.0" rx="10"/>
+<text class="t" x="62" y="686.0" font-size="14">helmet</text>
+<text class="b" x="62" y="706.0" font-size="12.5">Security headers: CSP, HSTS,</text>
+<text class="b" x="62" y="722.5" font-size="12.5">nosniff, frame and referrer</text>
+<text class="b" x="62" y="739.0" font-size="12.5">policies.</text>
+<line class="arrow" x1="276" y1="722.0" x2="296" y2="722.0" marker-end="url(#a)"/>
+<rect class="apic" x="296" y="664.0" width="226" height="116.0" rx="10"/>
+<text class="t" x="308" y="686.0" font-size="14">express.json</text>
+<text class="b" x="308" y="706.0" font-size="12.5">JSON bodies, 100 kB limit.</text>
+<text class="b" x="308" y="722.5" font-size="12.5">Uploads use their own 10 MB</text>
+<text class="b" x="308" y="739.0" font-size="12.5">raw parser.</text>
+<line class="arrow" x1="522" y1="722.0" x2="542" y2="722.0" marker-end="url(#a)"/>
+<rect class="apic" x="542" y="664.0" width="226" height="116.0" rx="10"/>
+<text class="t" x="554" y="686.0" font-size="14">requireAppHeader</text>
+<text class="b" x="554" y="706.0" font-size="12.5">CSRF defence: every non-GET</text>
+<text class="b" x="554" y="722.5" font-size="12.5">request must carry</text>
+<text class="b" x="554" y="739.0" font-size="12.5">X-Requested-With.</text>
+<line class="arrow" x1="768" y1="722.0" x2="788" y2="722.0" marker-end="url(#a)"/>
+<rect class="apic" x="788" y="664.0" width="226" height="116.0" rx="10"/>
+<text class="t" x="800" y="686.0" font-size="14">/api/auth</text>
+<text class="b" x="800" y="706.0" font-size="12.5">login · logout · me.</text>
+<text class="b" x="800" y="722.5" font-size="12.5">HMAC-signed cookie, 12 h. 5</text>
+<text class="b" x="800" y="739.0" font-size="12.5">failed tries per 15 min per</text>
+<text class="b" x="800" y="755.5" font-size="12.5">IP.</text>
+<line class="arrow" x1="1014" y1="722.0" x2="1034" y2="722.0" marker-end="url(#a)"/>
+<rect class="apic" x="1034" y="664.0" width="226" height="116.0" rx="10"/>
+<text class="t" x="1046" y="686.0" font-size="14">requireSession</text>
+<text class="b" x="1046" y="706.0" font-size="12.5">Everything below needs a</text>
+<text class="b" x="1046" y="722.5" font-size="12.5">valid session cookie,</text>
+<text class="b" x="1046" y="739.0" font-size="12.5">otherwise 401.</text>
+<rect class="apic" x="50" y="810.0" width="200" height="116.0" rx="10"/>
+<text class="t" x="62" y="832.0" font-size="14">GET /api/orgs</text>
+<text class="b" x="62" y="852.0" font-size="12.5">Lists the organisations</text>
+<text class="b" x="62" y="868.5" font-size="12.5">(Felice, Alur) with name,</text>
+<text class="b" x="62" y="885.0" font-size="12.5">slug and colour.</text>
+<rect class="apic" x="270" y="810.0" width="430" height="116.0" rx="10"/>
+<text class="t" x="282" y="832.0" font-size="14">/api/orgs/:org/…</text>
+<text class="b" x="282" y="852.0" font-size="12.5">A guard turns :org into a Scope (404 if unknown). weeks ·</text>
+<text class="b" x="282" y="868.5" font-size="12.5">items · recurring · actuals · reports (summary,</text>
+<text class="b" x="282" y="885.0" font-size="12.5">top, compare, variance, export.xlsx) · import.</text>
+<text class="b" x="282" y="901.5" font-size="12.5">Reads and writes that organisation only.</text>
+<rect class="apic" x="720" y="810.0" width="370" height="116.0" rx="10"/>
+<text class="t" x="732" y="832.0" font-size="14">/api/master/…</text>
+<text class="b" x="732" y="852.0" font-size="12.5">Scope covering every organisation, read-only.</text>
+<text class="b" x="732" y="868.5" font-size="12.5">summary · top · compare · variance</text>
+<text class="b" x="732" y="885.0" font-size="12.5">(org vs org, month vs month) · export.xlsx.</text>
+<rect class="apic" x="1110" y="810.0" width="150" height="116.0" rx="10"/>
+<text class="t" x="1122" y="832.0" font-size="14">Static files</text>
+<text class="b" x="1122" y="852.0" font-size="12.5">web/dist plus an</text>
+<text class="b" x="1122" y="868.5" font-size="12.5">index.html</text>
+<text class="b" x="1122" y="885.0" font-size="12.5">fallback.</text>
+<line class="arrow dash" x1="485" y1="780.0" x2="485" y2="810.0" marker-end="url(#a)"/>
+<line class="arrow dash" x1="905" y1="780.0" x2="905" y2="810.0" marker-end="url(#a)"/>
+<line class="arrow" x1="485" y1="926.0" x2="485" y2="956.0" marker-end="url(#a)"/>
+<text class="lbl" x="497" y="945.0" font-size="12" text-anchor="start">uses</text>
+<line class="arrow" x1="905" y1="926.0" x2="905" y2="956.0" marker-end="url(#a)"/>
+<text class="lbl" x="917" y="945.0" font-size="12" text-anchor="start">uses</text>
+<rect class="apic" x="50" y="956.0" width="230" height="153.0" rx="10"/>
+<text class="t" x="62" y="978.0" font-size="14">stores.ts</text>
+<text class="b" x="62" y="998.0" font-size="12.5">• createStores(db) builds one</text>
+<text class="b" x="72" y="1014.5" font-size="12.5">Scope per organisation and one</text>
+<text class="b" x="72" y="1031.0" font-size="12.5">combined Scope.</text>
+<text class="b" x="62" y="1049.5" font-size="12.5">• Scope = { orgs, repo,</text>
+<text class="b" x="72" y="1066.0" font-size="12.5">reports }.</text>
+<rect class="apic" x="300" y="956.0" width="230" height="153.0" rx="10"/>
+<text class="t" x="312" y="978.0" font-size="14">repo.ts</text>
+<text class="b" x="312" y="998.0" font-size="12.5">• Weeks, items, recurring, riders,</text>
+<text class="b" x="322" y="1014.5" font-size="12.5">imported actuals, importWeeks.</text>
+<text class="b" x="312" y="1033.0" font-size="12.5">• Every query is filtered by</text>
+<text class="b" x="322" y="1049.5" font-size="12.5">organisation.</text>
+<text class="b" x="312" y="1068.0" font-size="12.5">• The combined Scope can read</text>
+<text class="b" x="322" y="1084.5" font-size="12.5">but never write.</text>
+<rect class="apic" x="550" y="956.0" width="230" height="153.0" rx="10"/>
+<text class="t" x="562" y="978.0" font-size="14">reports.ts</text>
+<text class="b" x="562" y="998.0" font-size="12.5">• summary by month or week,</text>
+<text class="b" x="572" y="1014.5" font-size="12.5">top by name, compare, variance,</text>
+<text class="b" x="572" y="1031.0" font-size="12.5">periodSide, lineItems.</text>
+<text class="b" x="562" y="1049.5" font-size="12.5">• Adds a per-organisation</text>
+<text class="b" x="572" y="1066.0" font-size="12.5">breakdown in the combined</text>
+<text class="b" x="572" y="1082.5" font-size="12.5">Scope.</text>
+<rect class="apic" x="800" y="956.0" width="230" height="153.0" rx="10"/>
+<text class="t" x="812" y="978.0" font-size="14">excel.ts</text>
+<text class="b" x="812" y="998.0" font-size="12.5">• buildExport and</text>
+<text class="b" x="822" y="1014.5" font-size="12.5">parseWorkbook (ExcelJS).</text>
+<text class="b" x="812" y="1033.0" font-size="12.5">• Reads the planner layout and</text>
+<text class="b" x="822" y="1049.5" font-size="12.5">the app’s flat format; skips</text>
+<text class="b" x="822" y="1066.0" font-size="12.5">rows from other organisations.</text>
+<rect class="apic" x="1050" y="956.0" width="210" height="153.0" rx="10"/>
+<text class="t" x="1062" y="978.0" font-size="14">validate.ts · config.ts</text>
+<text class="b" x="1062" y="998.0" font-size="12.5">• Input checks, money to</text>
+<text class="b" x="1072" y="1014.5" font-size="12.5">integer cents, 60-month</text>
+<text class="b" x="1072" y="1031.0" font-size="12.5">cap.</text>
+<text class="b" x="1062" y="1049.5" font-size="12.5">• Environment settings;</text>
+<text class="b" x="1072" y="1066.0" font-size="12.5">refuses to start with weak</text>
+<text class="b" x="1072" y="1082.5" font-size="12.5">secrets.</text>
+<line class="arrow" x1="650" y1="1131.0" x2="650" y2="1181.0" marker-end="url(#a)"/>
+<text class="lbl" x="664" y="1160.0" font-size="12" text-anchor="start">node:sqlite · prepared SQL statements</text>
+<rect class="db" x="30" y="1181.0" width="1250" height="347.5" rx="14"/>
+<text class="layer" x="46" y="1205.0" font-size="13">DATA · SQLite database file (WAL mode)  server/data/planner.db</text>
+<rect class="dbc" x="50" y="1217.0" width="270" height="101.5" rx="10"/>
+<text class="t" x="62" y="1239.0" font-size="14">organisations</text>
+<text class="b" x="62" y="1259.0" font-size="12.5">id · slug · name · color</text>
+<text class="b" x="62" y="1277.5" font-size="12.5">Felice and Alur are created on first</text>
+<text class="b" x="62" y="1294.0" font-size="12.5">start.</text>
+<rect class="dbc" x="340" y="1217.0" width="290" height="101.5" rx="10"/>
+<text class="t" x="352" y="1239.0" font-size="14">weeks</text>
+<text class="b" x="352" y="1259.0" font-size="12.5">org_id · year · month · week_no · notes</text>
+<text class="b" x="352" y="1277.5" font-size="12.5">UNIQUE per organisation, year, month</text>
+<text class="b" x="352" y="1294.0" font-size="12.5">and week.</text>
+<rect class="dbc" x="650" y="1217.0" width="300" height="101.5" rx="10"/>
+<text class="t" x="662" y="1239.0" font-size="14">items</text>
+<text class="b" x="662" y="1259.0" font-size="12.5">week_id · category · name · notes</text>
+<text class="b" x="662" y="1277.5" font-size="12.5">amount_cents (the rate) · rider_cents</text>
+<rect class="dbc" x="970" y="1217.0" width="290" height="101.5" rx="10"/>
+<text class="t" x="982" y="1239.0" font-size="14">recurring_items</text>
+<text class="b" x="982" y="1259.0" font-size="12.5">org_id · category · name · notes</text>
+<text class="b" x="982" y="1277.5" font-size="12.5">amount_cents · rider_cents</text>
+<rect class="dbc" x="50" y="1330.0" width="580" height="70" rx="10"/>
+<text class="t" x="62" y="1352.0" font-size="14">actual_weeks</text>
+<text class="b" x="62" y="1372.0" font-size="12.5">org_id · year · month · week_no · label (the workbook tab)</text>
+<text class="b" x="62" y="1388.5" font-size="12.5">UNIQUE per organisation and week: importing again replaces it.</text>
+<rect class="dbc" x="650" y="1330.0" width="610" height="70" rx="10"/>
+<text class="t" x="662" y="1352.0" font-size="14">actual_sections</text>
+<text class="b" x="662" y="1372.0" font-size="12.5">actual_week_id · heading · grp · amount_cents · sheet_cents · paid_cents</text>
+<text class="b" x="662" y="1388.5" font-size="12.5">Section totals only, never the sheet’s individual lines.</text>
+<rect class="dbc" x="50" y="1410.0" width="580" height="70" rx="10"/>
+<text class="t" x="62" y="1432.0" font-size="14">rider_prices</text>
+<text class="b" x="62" y="1452.0" font-size="12.5">org_id · name · cost_cents (incl VAT)</text>
+<text class="b" x="62" y="1468.5" font-size="12.5">The rider price list. UNIQUE name per organisation.</text>
+<rect class="dbc" x="650" y="1410.0" width="610" height="70" rx="10"/>
+<text class="t" x="662" y="1432.0" font-size="14">rider_lines</text>
+<text class="b" x="662" y="1452.0" font-size="12.5">item_id · name · unit_cents · quantity — a headline act or host's rider</text>
+<text class="b" x="662" y="1468.5" font-size="12.5">The price is kept as calculated; the total is the line's rider cost.</text>
+<text class="b" x="50" y="1504.5" font-size="12.5">Money is stored as whole cents. Deleting a week deletes its items. Before any schema upgrade the app writes a backup copy: planner.db.before-organisations-….bak</text>
+<text class="b" x="50" y="1520.5" font-size="12.5">Relations: organisations 1→n weeks · weeks 1→n items · organisations 1→n recurring_items · organisations 1→n actual_weeks · actual_weeks 1→n actual_sections · organisations 1→n rider_prices · items 1→n rider_lines</text>
+<rect class="shared" x="1310" y="207.0" width="300" height="186.0" rx="10"/>
+<text class="t" x="1322" y="229.0" font-size="14">Shared code  /shared</text>
+<text class="b" x="1322" y="249.0" font-size="12.5">• categories.ts: the eight cost</text>
+<text class="b" x="1332" y="265.5" font-size="12.5">categories, which can recur, which carry</text>
+<text class="b" x="1332" y="282.0" font-size="12.5">a rider cost, month helpers.</text>
+<text class="b" x="1322" y="300.5" font-size="12.5">• types.ts: the API contract</text>
+<text class="b" x="1332" y="317.0" font-size="12.5">(Organisation, WeekSummary,</text>
+<text class="b" x="1332" y="333.5" font-size="12.5">SummaryReport, CompareReport and more).</text>
+<text class="b" x="1322" y="352.0" font-size="12.5">• Imported by both the web app and the</text>
+<text class="b" x="1332" y="368.5" font-size="12.5">server, so they cannot drift apart.</text>
+<rect class="tool" x="1310" y="409.0" width="300" height="237.5" rx="10"/>
+<text class="t" x="1322" y="431.0" font-size="14">Tooling and quality</text>
+<text class="b" x="1322" y="451.0" font-size="12.5">• npm run dev · build · start · setup ·</text>
+<text class="b" x="1332" y="467.5" font-size="12.5">seed · test · typecheck</text>
+<text class="b" x="1322" y="486.0" font-size="12.5">• 717 tests at 100% coverage: node --test</text>
+<text class="b" x="1332" y="502.5" font-size="12.5">(server) and Vitest (web app)</text>
+<text class="b" x="1322" y="521.0" font-size="12.5">• Covers organisation separation,</text>
+<text class="b" x="1332" y="537.5" font-size="12.5">combined totals, the database upgrade,</text>
+<text class="b" x="1332" y="554.0" font-size="12.5">reconciliation with the original planner,</text>
+<text class="b" x="1332" y="570.5" font-size="12.5">rider cost, recurring and actuals.</text>
+<text class="b" x="1322" y="589.0" font-size="12.5">• Configuration: server/.env (PORT, HOST,</text>
+<text class="b" x="1332" y="605.5" font-size="12.5">APP_PASSWORD, SESSION_SECRET, DB_PATH,</text>
+<text class="b" x="1332" y="622.0" font-size="12.5">COOKIE_SECURE)</text>
+<rect class="sec" x="1310" y="662.5" width="300" height="429.0" rx="10"/>
+<text class="t" x="1322" y="684.5" font-size="14">Security</text>
+<text class="b" x="1322" y="704.5" font-size="12.5">• One shared password, compared in</text>
+<text class="b" x="1332" y="721.0" font-size="12.5">constant time (SHA-256 digests).</text>
+<text class="b" x="1322" y="739.5" font-size="12.5">• Session cookie signed with HMAC-SHA256:</text>
+<text class="b" x="1332" y="756.0" font-size="12.5">HttpOnly, SameSite=Strict, Secure when</text>
+<text class="b" x="1332" y="772.5" font-size="12.5">COOKIE_SECURE=true.</text>
+<text class="b" x="1322" y="791.0" font-size="12.5">• CSRF: custom header required on every</text>
+<text class="b" x="1332" y="807.5" font-size="12.5">write.</text>
+<text class="b" x="1322" y="826.0" font-size="12.5">• Sign-in limited to 5 failures per 15</text>
+<text class="b" x="1332" y="842.5" font-size="12.5">minutes per IP.</text>
+<text class="b" x="1322" y="861.0" font-size="12.5">• helmet security headers and a strict</text>
+<text class="b" x="1332" y="877.5" font-size="12.5">content policy.</text>
+<text class="b" x="1322" y="896.0" font-size="12.5">• Listens on 127.0.0.1 only unless HOST</text>
+<text class="b" x="1332" y="912.5" font-size="12.5">is changed.</text>
+<text class="b" x="1322" y="931.0" font-size="12.5">• SQL is always parameterised; every</text>
+<text class="b" x="1332" y="947.5" font-size="12.5">input is validated; JSON 100 kB and</text>
+<text class="b" x="1332" y="964.0" font-size="12.5">upload 10 MB limits.</text>
+<text class="b" x="1322" y="982.5" font-size="12.5">• Organisations are kept apart in the</text>
+<text class="b" x="1332" y="999.0" font-size="12.5">data layer, not only in the screens. A</text>
+<text class="b" x="1332" y="1015.5" font-size="12.5">week or line from one organisation</text>
+<text class="b" x="1332" y="1032.0" font-size="12.5">answers 404 through another.</text>
+<text class="b" x="1322" y="1050.5" font-size="12.5">• Not built in: separate logins per</text>
+<text class="b" x="1332" y="1067.0" font-size="12.5">organisation.</text>
+</svg>

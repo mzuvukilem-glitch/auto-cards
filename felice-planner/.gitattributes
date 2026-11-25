@@ -1,0 +1,7 @@
+# Same line endings on every operating system. Windows Git would otherwise convert files to CRLF.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.xlsx binary
+*.db binary
