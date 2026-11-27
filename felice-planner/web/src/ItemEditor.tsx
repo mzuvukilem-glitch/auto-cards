@@ -363,6 +363,7 @@ function AddItemForm({
           value={name}
           maxLength={200}
           list={listId}
+          autoComplete="off"
           required
           onChange={(e) => setName(e.target.value)}
         />

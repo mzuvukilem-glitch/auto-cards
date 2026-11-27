@@ -800,6 +800,10 @@ tfoot td {
   font-size: 0.85rem;
   color: var(--muted);
 }
+.rider-add select {
+  width: 100%;
+  margin-top: 0.25rem;
+}
 .rider-total {
   display: flex;
   flex-wrap: wrap;

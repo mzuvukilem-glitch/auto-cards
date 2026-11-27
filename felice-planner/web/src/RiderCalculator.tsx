@@ -224,11 +224,26 @@ export function RiderCalculator({
           <input
             id={`${id}-name`}
             list={`${id}-prices`}
+            // Firefox hides the list of suggestions once its own saved entries exist for a field.
+            autoComplete="off"
             value={newName}
             maxLength={200}
             placeholder={tools.prices.length ? 'Choose or type an item' : 'Type an item'}
             onChange={(e) => pickName(e.target.value)}
           />
+          {/* A plain list of every item, because a suggestion list only shows what matches what was typed, and some browsers do not show it at all. */}
+          {tools.prices.length > 0 && (
+            <select aria-label="Choose from the price list" value="" onChange={(e) => pickName(e.target.value)}>
+              <option value="" disabled>
+                Choose from the price list
+              </option>
+              {tools.prices.map((p) => (
+                <option key={p.id} value={p.name}>
+                  {p.name} ({money(p.cost)})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div>
           <label htmlFor={`${id}-unit`}>Cost incl VAT (R)</label>

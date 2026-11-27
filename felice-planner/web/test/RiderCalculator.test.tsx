@@ -142,6 +142,35 @@ describe('opening the calculator', () => {
 });
 
 describe('adding items', () => {
+  it('lists every price list item to pick from, whatever has been typed, and turns off saved-entry suggestions', async () => {
+    const { user } = setup({ item: { id: 7, name: 'DJ Max', riderCost: 800, riderItems: 0 } });
+    await screen.findByRole('group');
+    const picker = within(addForm()).getByLabelText('Choose from the price list') as HTMLSelectElement;
+    expect([...picker.options].map((o) => txt(o))).toEqual(['Choose from the price list', `Water (${zar(12.5)})`, `Red Bull (${zar(35)})`]);
+    expect(picker.options[0]!.disabled).toBe(true);
+    expect(itemInput().getAttribute('autocomplete')).toBe('off');
+    await user.type(itemInput(), 'zzz');
+    expect(picker.options).toHaveLength(3);
+  });
+
+  it('fills in the item and its cost when one is picked from the list, and goes back to the prompt', async () => {
+    const { user } = setup();
+    await screen.findByRole('group');
+    const picker = within(addForm()).getByLabelText('Choose from the price list') as HTMLSelectElement;
+    await user.selectOptions(picker, 'Red Bull');
+    expect(itemInput().value).toBe('Red Bull');
+    expect(costInput().value).toBe('35');
+    expect(picker.value).toBe('');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(lines()).toHaveLength(1);
+  });
+
+  it('has no list to pick from when the price list is empty', async () => {
+    setup({ prices: [] });
+    await screen.findByRole('group');
+    expect(screen.queryByLabelText('Choose from the price list')).toBeNull();
+  });
+
   it('fills in the listed cost when a price list item is chosen, whatever its case', async () => {
     const { user } = setup();
     await screen.findByRole('group');
