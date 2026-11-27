@@ -27,6 +27,16 @@ function suggestWeek(known: Known | undefined, today: Date): WeekRef {
   return next ? { year: next.year, month: next.month, weekNo: next.weekNo } : { year: today.getFullYear(), month: today.getMonth() + 1, weekNo: 1 };
 }
 
+/**
+ * The week a sheet belongs to: its position among the workbook's weekly sheets (the ones with figures), so the
+ * first sheet is week 1, the second week 2, and so on. Null for a sheet that is not a weekly one, or that is
+ * beyond the fifth, which no month has a week for.
+ */
+function weekOfSheet(list: ActualSheetList, name: string): number | null {
+  const position = list.sheets.filter((s) => s.sections > 0).findIndex((s) => s.name === name) + 1;
+  return position >= 1 && position <= 5 ? position : null;
+}
+
 /** Everything about actual expenditure on the Import & export page. */
 export function ActualsImport() {
   const { api } = useOrg();
@@ -73,7 +83,9 @@ function ImportCard({ known, onChanged }: { known: Known | undefined; onChanged:
       const list = await api.actualSheets(f);
       setSheets(list);
       setTab(list.suggested ?? '');
-      setWeek(suggestWeek(known, new Date()));
+      // The month and year are suggested from what is planned; the week follows the sheet's position.
+      const suggested = suggestWeek(known, new Date());
+      setWeek({ ...suggested, weekNo: weekOfSheet(list, list.suggested ?? '') ?? suggested.weekNo });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -136,8 +148,8 @@ function ImportCard({ known, onChanged }: { known: Known | undefined; onChanged:
   return (
     <Card title="Import actual expenditure">
       <p className="muted">
-        Import the weekly expense sheet at the end of each week. Choose the file, pick the <strong>tab for that week</strong> and say which planned
-        week it is. Only each section's <strong>subtotal</strong> is used; the individual lines are not read into the comparison. Importing a week
+        Import the weekly expense sheet at the end of each week. Choose the file and pick the <strong>tab for that week</strong>. The week follows the
+        tab's position: the first weekly tab is week 1, the second is week 2, and so on. Check the month and year, and change the week if it is wrong. Only each section's <strong>subtotal</strong> is used; the individual lines are not read into the comparison. Importing a week
         again replaces it.
       </p>
       <p className="muted">
@@ -163,6 +175,7 @@ function ImportCard({ known, onChanged }: { known: Known | undefined; onChanged:
                 value={tab}
                 onChange={(e) => {
                   setTab(e.target.value);
+                  setWeek({ ...week, weekNo: weekOfSheet(sheets, e.target.value) ?? week.weekNo });
                   reset();
                 }}
               >

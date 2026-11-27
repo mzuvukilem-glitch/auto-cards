@@ -207,37 +207,86 @@ describe('choosing the workbook', () => {
   });
 });
 
-describe('which week is suggested', () => {
+describe('which month and year are suggested', () => {
   async function suggested(setup: Setup) {
     install(setup);
     const view = renderOrgPage(<ActualsImport />);
     // Wait for the planned weeks and actuals to be known before choosing the file.
     await waitFor(() => expect(screen.queryByText('Loading…')).toBeNull());
     await chooseFile(view.user);
-    return { year: Number(select('Year').value), month: Number(select('Month').value), week: Number(select('Week').value) };
+    return { year: Number(select('Year').value), month: Number(select('Month').value) };
   }
   const w = (id: number, month: number, weekNo: number) => weekSummary({ id, month, weekNo });
   const a = (id: number, month: number, weekNo: number) => actualWeek({ id, month, weekNo });
 
-  it('is week 1 of this month when nothing is planned', async () => {
+  it('are this month when nothing is planned', async () => {
     freezeToday('2026-09-14T10:00:00');
-    expect(await suggested({})).toEqual({ year: 2026, month: 9, week: 1 });
+    expect(await suggested({})).toEqual({ year: 2026, month: 9 });
   });
 
-  it('is the first planned week when nothing has actuals yet', async () => {
-    expect(await suggested({ weeks: [w(1, 5, 2), w(2, 5, 3)] })).toEqual({ year: 2026, month: 5, week: 2 });
+  it('are those of the first planned week when nothing has actuals yet', async () => {
+    expect(await suggested({ weeks: [w(1, 5, 2), w(2, 5, 3)] })).toEqual({ year: 2026, month: 5 });
   });
 
-  it('is the first planned week after the latest imported one', async () => {
-    expect(await suggested({ weeks: [w(1, 5, 1), w(2, 5, 2), w(3, 5, 3), w(4, 5, 4)], actuals: [a(1, 5, 1), a(2, 5, 2)] })).toEqual({ year: 2026, month: 5, week: 3 });
+  it('are those of the first planned week after the latest imported one', async () => {
+    expect(await suggested({ weeks: [w(1, 5, 4), w(2, 6, 1)], actuals: [a(1, 5, 4)] })).toEqual({ year: 2026, month: 6 });
   });
 
-  it('goes back to the earliest planned week still without actuals when none is later', async () => {
-    expect(await suggested({ weeks: [w(1, 5, 1), w(2, 5, 2), w(3, 5, 3)], actuals: [a(2, 5, 2), a(3, 5, 3)] })).toEqual({ year: 2026, month: 5, week: 1 });
+  it('go back to the earliest planned week still without actuals when none is later', async () => {
+    expect(await suggested({ weeks: [w(1, 4, 1), w(2, 5, 2), w(3, 5, 3)], actuals: [a(2, 5, 2), a(3, 5, 3)] })).toEqual({ year: 2026, month: 4 });
   });
 
-  it('is the last planned week when every planned week already has actuals', async () => {
-    expect(await suggested({ weeks: [w(1, 5, 1), w(2, 5, 2)], actuals: [a(1, 5, 1), a(2, 5, 2)] })).toEqual({ year: 2026, month: 5, week: 2 });
+  it('are those of the last planned week when every planned week already has actuals', async () => {
+    expect(await suggested({ weeks: [w(1, 5, 1), w(2, 5, 2)], actuals: [a(1, 5, 1), a(2, 5, 2)] })).toEqual({ year: 2026, month: 5 });
+  });
+});
+
+describe('which week a sheet is imported against', () => {
+  const sheet = (name: string, sections = 3) => ({ name, total: sections * 1000, sections });
+  const week = () => Number(select('Week').value);
+
+  it('is its position among the weekly sheets: the first is week 1, the second week 2', async () => {
+    install({ sheets: { sheets: [sheet('01-05'), sheet('08-05'), sheet('15-05'), sheet('22-05'), sheet('29-05')], suggested: '29-05' } });
+    const { user } = renderOrgPage(<ActualsImport />);
+    await chooseFile(user);
+    expect(week()).toBe(5);
+    for (const [name, expected] of [['01-05', 1], ['08-05', 2], ['15-05', 3], ['22-05', 4], ['29-05', 5]] as const) {
+      await user.selectOptions(select('Tab (one week)'), name);
+      expect(week()).toBe(expected);
+    }
+  });
+
+  it('does not count a sheet with nothing to import, so a leading READ ME does not push the weeks along', async () => {
+    install({ sheets: { sheets: [sheet('READ ME', 0), sheet('01-05'), sheet('SUMMARY', 0), sheet('08-05')], suggested: '08-05' } });
+    const { user } = renderOrgPage(<ActualsImport />);
+    await chooseFile(user);
+    expect(week()).toBe(2);
+    await user.selectOptions(select('Tab (one week)'), '01-05');
+    expect(week()).toBe(1);
+  });
+
+  it('is sent with the preview and the import, and can still be changed by hand', async () => {
+    const mock = install();
+    const { user } = renderOrgPage(<ActualsImport />);
+    await chooseFile(user);
+    await user.selectOptions(select('Tab (one week)'), '08-05');
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    await screen.findByRole('heading', { name: /from tab/ });
+    expect(mock.of('POST', '/orgs/felice/actuals/import')[0]!.query).toMatchObject({ sheet: '08-05', weekNo: '1' });
+    await user.selectOptions(select('Week'), '4');
+    expect(week()).toBe(4);
+  });
+
+  it('is left as it was for a sixth sheet, which no month has a week for', async () => {
+    install({ sheets: { sheets: ['a', 'b', 'c', 'd', 'e', 'f'].map((n) => sheet(n)), suggested: 'f' } });
+    const { user } = renderOrgPage(<ActualsImport />);
+    await chooseFile(user);
+    expect(week()).toBe(1);
+    await user.selectOptions(select('Tab (one week)'), 'e');
+    expect(week()).toBe(5);
+    await user.selectOptions(select('Week'), '3');
+    await user.selectOptions(select('Tab (one week)'), 'f');
+    expect(week()).toBe(3);
   });
 });
 
@@ -252,9 +301,9 @@ describe('previewing a week', () => {
   }
 
   it('checks the chosen tab and week without saving, and shows the sections and comparison', async () => {
-    const { mock } = await previewed({ weeks: [weekSummary({ id: 1, month: 5, weekNo: 3 })] });
+    const { mock } = await previewed({ weeks: [weekSummary({ id: 1, month: 5, weekNo: 2 })] });
     const call = mock.of('POST', '/orgs/felice/actuals/import')[0]!;
-    expect(call.query).toEqual({ sheet: '15-05', year: '2026', month: '5', weekNo: '3', dryRun: '1' });
+    expect(call.query).toEqual({ sheet: '15-05', year: '2026', month: '5', weekNo: '2', dryRun: '1' });
     expect(screen.getByRole('heading', { name: /May 2026 W3\s+from tab 15-05/ })).toBeTruthy();
     expect(amountInput("LOCAL DJ's").value).toBe('5000');
     expect(amountInput('HEADLINERS').value).toBe('10000');
@@ -359,8 +408,8 @@ describe('previewing a week', () => {
     await chooseFile(user);
     await user.selectOptions(select('Month'), '11');
     fireEvent.change(select('Year'), { target: { value: '2025' } });
-    await user.selectOptions(select('Week'), '4');
     await user.selectOptions(select('Tab (one week)'), '08-05');
+    await user.selectOptions(select('Week'), '4');
     await user.click(screen.getByRole('button', { name: 'Preview' }));
     await screen.findByRole('heading', { name: /from tab/ });
     expect(mock.of('POST', '/orgs/felice/actuals/import')[0]!.query).toEqual({ sheet: '08-05', year: '2025', month: '11', weekNo: '4', dryRun: '1' });
