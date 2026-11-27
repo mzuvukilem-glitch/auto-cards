@@ -18,6 +18,7 @@ The web app is the main client, but the API is plain JSON over HTTP and can be u
 6. [Line items](#6-line-items) (including the [rider calculator](#rider-calculator) and [rider prices](#rider-prices))
 7. [Recurring costs](#7-recurring-costs)
 8. [Reports for one organisation](#8-reports-for-one-organisation)
+   * [Backup and restore](#9a-backup-and-restore) (the whole database, not one organisation)
 9. [Import](#9-import)
    * [Import templates](#import-templates)
 10. [Actual expenditure and planned vs actual](#10-actual-expenditure-and-planned-vs-actual)
@@ -306,6 +307,25 @@ Returns two sides to compare:
 
 ### `GET /api/orgs/:org/reports/export.xlsx?from=…&to=…&groupBy=month|week`
 Downloads an Excel file: a **Summary** sheet (period rows, categories, totals) and a **Line Items** sheet (one row per line, importable again). A **Resident DJ** column holds `Yes` for individual resident DJs, so importing the file again keeps them as DJs. A lump-sum Resident DJs line that is not being counted (because the week has DJs) is left out, so the file adds up to the report.
+
+## 9a. Backup and restore
+
+These cover the **whole database** (every organisation), so they are not under `/api/orgs/:org`.
+
+### `GET /api/backup`
+Returns a consistent copy of the database as one SQLite file (`application/octet-stream`, `Content-Disposition: attachment; filename=planner-backup-<date>.db`, `Cache-Control: no-store`). Safe while the app is in use.
+
+### `POST /api/backup/restore?dryRun=1`
+The backup file as the **raw request body**. With `dryRun=1` it only checks the file and changes nothing. Without it, the current data is saved to `server/backups/before-restore-<date and time>.db` and then replaced with the file's, all or nothing. Both answer:
+
+```json
+{ "applied": false,
+  "current": { "orgs": [ { "slug": "felice", "name": "Felice", "weeks": 9, "lines": 80, "recurring": 3, "riderPrices": 12, "actualWeeks": 4, "latestWeek": "July 2026 W1" } ] },
+  "backup":  { "orgs": [ { "slug": "felice", "name": "Felice", "weeks": 7, "lines": 60, "recurring": 3, "riderPrices": 12, "actualWeeks": 4, "latestWeek": "May 2026 W2" } ] },
+  "safetyCopy": null }
+```
+
+`applied` is `true` and `safetyCopy` is the saved file's name once restored. `current` is always the data as it was before. A file that is empty, not a SQLite file, not the planner's, damaged (failed integrity or foreign-key check), made for other companies, too old to be brought up to date, or that cannot be loaded answers `400` and leaves the data as it was. The upload can be up to 200 MB.
 
 ## 9. Import
 

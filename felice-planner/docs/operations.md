@@ -61,7 +61,7 @@ All commands, run from the project root:
 | `npm run build` | Type-check and build the web app into `web/dist`. |
 | `npm start` | Start the API server (serves `web/dist` if it exists). |
 | `npm run seed -- --file "<xlsx>" --year 2026 --org felice` | Load the original planner workbook into an organisation. |
-| `npm run backup` | Write a safe copy of the database to `server/backups/`. |
+| `npm run backup` | Write a safe copy of the database to `server/backups/`. (The app's **Backup & restore** page does the same, and restores.) |
 | `npm run typecheck` | Type-check the server, the web app and the shared code. |
 | `npm test` | Run all the automated tests (server and web). |
 | `npm run test:coverage` | Run them and fail unless coverage is 100%. |
@@ -100,9 +100,21 @@ This writes a single, consistent, compact file to `server/backups/planner-<date 
 
 A good routine: back up before importing a spreadsheet, before deleting weeks, and at the end of each week or month.
 
+**From inside the app.** Choose **Backup & restore** in the sidebar (on every page) and press **Download backup**. It saves the same kind of single, consistent file, to your browser's download folder, and works while others are using the planner.
+
 You can also export a report to Excel from the app at any time. That is useful for sharing, but it is not a full backup (it does not contain recurring costs).
 
 ## 6. Restoring
+
+**From inside the app (no restart needed).** Choose **Backup & restore** in the sidebar, then **Restore from a backup**, and choose a backup file (from *Download backup* or `npm run backup`). The file is checked first and shown next to the current data: weeks, cost lines, recurring costs, rider prices, imported actual weeks and the latest week for each company. Nothing changes until you press **Restore this backup** and confirm.
+
+* **Restoring replaces the data of every company** with what is in the file. A backup is of the whole database, so Felice and Alur are restored together.
+* **The data that was there is saved first**, as `server/backups/before-restore-<date and time>.db`. If the restore was a mistake, restore that file the same way to undo it.
+* The restore is **all or nothing**. A file that is not a planner backup, is damaged, was made for other companies, or cannot be loaded is refused, and the current data is left as it was.
+* A backup from an **older version** is brought up to date as it is read, exactly as starting the app on it would do.
+* The page is available to anyone who can sign in, which is everyone who has the planner password. Keep the backup files as private as `server/.env`: they hold all of the data.
+
+**By hand (the app is stopped, or will not start).**
 
 1. Stop the app.
 2. In `server/data/`, move `planner.db`, `planner.db-wal` and `planner.db-shm` somewhere safe (the last two may not exist).
@@ -270,6 +282,7 @@ felice-planner/
 │   │   ├── templates.ts    downloadable import templates
 │   │   ├── actuals.ts      reads a week's section totals from the expense workbook
 │   │   ├── backup.ts       safe database copy (npm run backup)
+│   │   ├── snapshot.ts     download a backup and restore one from the Backup & restore page
 │   │   ├── routes.ts       HTTP endpoints
 │   │   ├── validate.ts     input checks
 │   │   ├── seed.ts         load the original planner

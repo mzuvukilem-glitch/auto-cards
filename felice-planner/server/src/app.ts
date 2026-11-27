@@ -6,14 +6,18 @@ import { join, resolve } from 'node:path';
 import { createAuth, requireAppHeader } from './auth.ts';
 import type { ServerConfig } from './config.ts';
 import { apiRoutes } from './routes.ts';
+import { createBackups } from './snapshot.ts';
 import { createStores } from './stores.ts';
 import { HttpError } from './validate.ts';
 
 /** Where "npm run build" puts the web app. */
 export const DEFAULT_WEB_DIST = resolve(import.meta.dirname, '../../web/dist');
 
+/** Where "npm run backup" puts its files, and where the current data is saved before a restore. */
+export const DEFAULT_BACKUP_DIR = resolve(import.meta.dirname, '../backups');
+
 /** Builds the whole server: security headers, sign-in, the API, the built web app and the error handler. */
-export function createApp(cfg: ServerConfig, db: DatabaseSync, webDist: string = DEFAULT_WEB_DIST) {
+export function createApp(cfg: ServerConfig, db: DatabaseSync, webDist: string = DEFAULT_WEB_DIST, backupDir: string = DEFAULT_BACKUP_DIR) {
   const stores = createStores(db);
   const auth = createAuth(cfg);
 
@@ -39,7 +43,7 @@ export function createApp(cfg: ServerConfig, db: DatabaseSync, webDist: string =
   api.post('/auth/logout', auth.logout);
   api.get('/auth/me', auth.me);
   api.use(auth.requireSession);
-  api.use(apiRoutes(stores));
+  api.use(apiRoutes(stores, createBackups(db, backupDir)));
   api.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });

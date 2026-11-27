@@ -14,6 +14,7 @@ import type {
   LineItem,
   Organisation,
   PaymentSchedule,
+  RestoreResult,
   ResidentBookingsReport,
   RiderCalc,
   RiderPrice,
@@ -200,6 +201,16 @@ const master = {
   exportUrl: (from: string, to: string, groupBy: GroupBy) => `/api/master/export.xlsx?${qs({ from, to, groupBy })}`,
 };
 
+/** Backing up and restoring the whole database (every organisation). */
+const backup = {
+  /** A link that downloads the backup file. */
+  url: '/api/backup',
+  /** Reports what a backup file holds next to the current data. Changes nothing. */
+  check: (file: File) => request<RestoreResult>('POST', '/backup/restore?dryRun=1', file),
+  /** Saves the current data, then replaces it with the backup. */
+  restore: (file: File) => request<RestoreResult>('POST', '/backup/restore', file),
+};
+
 export const api = {
   me: () => request<{ authenticated: boolean }>('GET', '/auth/me'),
   login: (password: string) => request<{ ok: true }>('POST', '/auth/login', { password }),
@@ -207,4 +218,5 @@ export const api = {
   organisations: () => request<Organisation[]>('GET', '/orgs'),
   org: orgApi,
   master,
+  backup,
 };

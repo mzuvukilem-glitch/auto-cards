@@ -58,9 +58,10 @@ export interface Running {
   close: () => Promise<void>;
 }
 
-export async function start(opts: { cfg?: Partial<ServerConfig>; webDist?: string; db?: DatabaseSync } = {}): Promise<Running> {
+export async function start(opts: { cfg?: Partial<ServerConfig>; webDist?: string; db?: DatabaseSync; backupDir?: string } = {}): Promise<Running> {
   const db = opts.db ?? openDb(':memory:');
-  const server: Server = createApp(config(opts.cfg), db, opts.webDist ?? fakeWebDist(true)).listen(0, '127.0.0.1');
+  const backupDir = opts.backupDir ?? join(fakeWebDist(false), 'backups'); // never the real server/backups folder
+  const server: Server = createApp(config(opts.cfg), db, opts.webDist ?? fakeWebDist(true), backupDir).listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   let cookie = '';

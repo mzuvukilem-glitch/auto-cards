@@ -150,6 +150,14 @@ describe('the sidebar', () => {
     expect(within(nav).getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBeNull();
   });
 
+  it('offers Backup & restore on every page, and opens it', async () => {
+    const { user } = mount('/o/felice/reports');
+    const safety = await screen.findByRole('navigation', { name: 'Data safety' });
+    expect(within(safety).getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([['Backup & restore', '/backup']]);
+    await user.click(within(safety).getByRole('link', { name: 'Backup & restore' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Backup & restore' })).toBeTruthy();
+    expect(screen.getByRole('navigation', { name: 'Master pages' })).toBeTruthy();
+  });
   it('moves between master and organisation pages', async () => {
     const { user } = mount('/master');
     await screen.findByRole('heading', { name: /Master dashboard/ });

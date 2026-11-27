@@ -190,7 +190,7 @@ Do this at the end of each week.
 
 1. Choose **Import & export** inside Felice or Alur, and find **Import actual expenditure** (or press **Import this week's actuals** on the Plan vs actual page). If you are not sure how the workbook should look, download the **expense workbook template**: two example weekly tabs and a READ ME tab.
 2. Choose the expense workbook (.xlsx). Its tabs are listed. **One tab is one week.** The last tab with figures is pre-selected.
-3. Check **Month**, **Year** and **Week**. They are suggested as the first planned week after the latest week that already has actuals.
+3. Check **Month**, **Year** and **Week**. The **Week** follows the tab's position: the **first weekly tab is week 1, the second is week 2**, and so on up to week 5. A tab with nothing to import (such as READ ME) is not counted. **Month** and **Year** are suggested as the first planned week after the latest week that already has actuals. Pick another tab and the week changes with it; you can still change any of them by hand.
 4. Press **Preview**. You see each section's total from the sheet, a table of planned against actual for that week, and anything to check. Nothing is saved yet.
 5. If the sheet's **Miscellaneous** section includes costs that belong to the other company, type the amount that belongs here in the **Amount to import** box. The comparison updates and the week is marked *adjusted*. The sheet's own figure is remembered.
 6. Press **Import** (or **Replace** if that week was imported before).
@@ -268,6 +268,14 @@ Choose **All organisations**. The master view is for reading and reporting only;
 * **Organisation vs organisation:** Felice against Alur over a period you choose, category by category.
 * **Month vs month (combined):** both companies added together for one month against another.
 
+### Backup and restore
+Choose **Backup & restore** at the bottom of the sidebar (it is on every page). It covers **both companies**.
+
+* **Download backup** saves everything in one file: weeks and cost lines, riders and rider prices, recurring costs and imported actuals. Do this before importing a spreadsheet or deleting weeks, and at the end of each week. Keep the file somewhere other than this computer too.
+* **Restore from a backup**: choose a backup file. It is checked and shown next to what is there now (weeks, cost lines, recurring costs, rider prices, actual weeks and the latest week for each company). Nothing changes until you press **Restore this backup** and confirm.
+* Restoring **replaces everything** for both companies with what is in the file. What was there is **saved first** as a file in the planner's `server/backups` folder, named `before-restore-…`, and the page tells you its name. To undo a restore, restore that file.
+* A file that is not a planner backup, or is damaged, is refused and nothing changes.
+
 ## 11. Common tasks
 
 | I want to… | Do this |
@@ -287,6 +295,7 @@ Choose **All organisations**. The master view is for reading and reporting only;
 | Add a resident DJ to a week | Company → Weekly planner → pick the week → Resident DJs → Name and Rate → Add. |
 | Add many resident DJs at once | The week → Import resident DJs from a file → choose file → Preview → Import. |
 | Start an import from a template | Company → Import & export (or the week's Resident DJs box) → the template link on the import card. |
+| Back up everything / restore a backup | Sidebar → Backup & restore → Download backup, or choose a file under Restore from a backup. |
 | Import the week's actual spend | Company → Import & export → Import actual expenditure → choose workbook → pick the tab → Preview → Import. |
 | See if I am over or under plan | Company (or All organisations) → Plan vs actual. |
 | Pay the week's resident DJs | The week → Payment schedule → Download .xlsx (batches of 5). |

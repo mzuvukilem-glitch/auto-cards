@@ -5,6 +5,7 @@ import { applyAdjustments, listSheets, loadWorkbook, readSheet, summarise, toPre
 import { TEMPLATES, templateById } from './templates.ts';
 import { buildExport, buildPaymentSchedule, parseResidentDjs, parseRiderPrices, parseWorkbook } from './excel.ts';
 import type { NewDj, NewItem, NewPrice, NewRiderLine } from './repo.ts';
+import type { Backups } from './snapshot.ts';
 import type { Scope, Stores } from './stores.ts';
 import * as v from './validate.ts';
 
@@ -122,11 +123,24 @@ function groupBy(value: unknown): GroupBy {
   throw new v.HttpError(400, 'groupBy must be "month" or "week"');
 }
 
-export function apiRoutes(stores: Stores): Router {
+export function apiRoutes(stores: Stores, backups: Backups): Router {
   const root = Router();
 
   root.get('/orgs', (_req, res) => {
     res.json(stores.organisations);
+  });
+
+  // --- Backup and restore (the whole database, both companies) -----------------------
+  root.get('/backup', (_req, res) => {
+    const { data, filename } = backups.download();
+    res.set('Cache-Control', 'no-store').type('application/octet-stream').attachment(filename).send(data);
+  });
+
+  // Upload a backup file as the raw request body. ?dryRun=1 only checks it and reports what it holds.
+  root.post('/backup/restore', express.raw({ type: () => true, limit: '200mb' }), (req, res) => {
+    const data = req.body;
+    if (!Buffer.isBuffer(data) || data.length === 0) throw new v.HttpError(400, 'Upload a backup (.db) file');
+    res.json(isDryRun(req) ? backups.check(data) : backups.restore(data));
   });
 
   // --- Import templates --------------------------------------------------------

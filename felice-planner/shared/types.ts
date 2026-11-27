@@ -373,3 +373,31 @@ export interface ActualImportPreview {
   adjusted: boolean;
   warnings: string[];
 }
+// ---------------------------------------------------------------------------
+// Backup and restore
+// ---------------------------------------------------------------------------
+/** What one company has in a database, so a backup can be checked against the current data before restoring. */
+export interface BackupOrgSummary {
+  slug: string;
+  name: string;
+  weeks: number;
+  /** Cost lines across all its weeks. */
+  lines: number;
+  recurring: number;
+  riderPrices: number;
+  /** Weeks of imported actual expenditure. */
+  actualWeeks: number;
+  /** The most recent planned week, for example "May 2026 W3", or null if there are none. */
+  latestWeek: string | null;
+}
+export interface BackupSummary {
+  orgs: BackupOrgSummary[];
+}
+export interface RestoreResult {
+  /** False for a check (nothing was changed), true once the backup has been restored. */
+  applied: boolean;
+  current: BackupSummary;
+  backup: BackupSummary;
+  /** The file the current data was saved to just before restoring, so a restore can be undone. Only when applied. */
+  safetyCopy: string | null;
+}

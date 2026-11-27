@@ -7,6 +7,7 @@ import { errorMessage } from './lib.ts';
 import { OrgLogo } from './logos.tsx';
 import { OrgLayout, OrganisationsProvider } from './org.tsx';
 import { ActualsPage } from './pages/Actuals.tsx';
+import { BackupPage } from './pages/Backup.tsx';
 import { ComparePage } from './pages/Compare.tsx';
 import { DashboardPage } from './pages/Dashboard.tsx';
 import { DataPage } from './pages/Data.tsx';
@@ -88,6 +89,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
             <Route path="/master/reports" element={<MasterReportsPage />} />
             <Route path="/master/actuals" element={<MasterActualsPage />} />
             <Route path="/master/compare" element={<MasterComparePage />} />
+            <Route path="/backup" element={<BackupPage />} />
             <Route path="/o/:org" element={<OrgLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="planner" element={<PlannerPage />} />
@@ -153,6 +155,14 @@ function Sidebar({ orgs, onSignOut }: { orgs: Organisation[]; onSignOut: () => v
                   </NavLink>
                 </li>
               ))}
+        </ul>
+      </nav>
+
+      <nav aria-label="Data safety">
+        <ul>
+          <li>
+            <NavLink to="/backup">Backup &amp; restore</NavLink>
+          </li>
         </ul>
       </nav>
 

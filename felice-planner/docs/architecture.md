@@ -137,6 +137,7 @@ Routes: `/master`, `/master/reports`, `/master/actuals`, `/master/compare`, and 
 | `templates.ts` | Builds the downloadable import templates (planned weeks, original planner layout, resident DJs as Excel and CSV, rider prices, actual expenditure) with example rows and a READ ME sheet. `GET /api/templates/:id` serves them. |
 | `actuals.ts` | Reads one tab of the weekly expense workbook: finds each section's SUBTOTAL, maps the section to a cost group, cross-checks the tab total, and applies any adjusted amounts. |
 | `backup.ts` | `npm run backup`: a safe single-file copy of the database. |
+| `snapshot.ts` | The Backup & restore page: `VACUUM INTO` for a download; for a restore, checks the uploaded file (SQLite header, integrity and foreign-key checks, the planner's tables, the same companies), brings a copy up to date with `openDb`, saves the current data to `server/backups/before-restore-*.db`, then copies every data table into the live database in one transaction on the open connection. |
 | `routes.ts` | The HTTP endpoints. See the [API reference](api.md). |
 | `validate.ts` | Input checks and the `HttpError` type. Converts rand amounts to integer cents. |
 | `seed.ts`, `setup.ts` | Command-line helpers: load a workbook; create `.env`. |
